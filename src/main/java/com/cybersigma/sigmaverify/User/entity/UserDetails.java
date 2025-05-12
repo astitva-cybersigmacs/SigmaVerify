@@ -47,4 +47,8 @@ public class UserDetails {
     @JoinColumn(name = "passportDetailsId")
     private PassportDetails passportDetails;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "tradeLicenseDetailsId")
+    private BankStatementDetails bankStatementDetails;
+
 }

@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,7 +56,10 @@ public class UserDetailServiceImpl implements UserDetailService {
                 handleDrivingLicenseDocument(userDetails, documentNumber, imageSide, docImage);
             } else if (documentType.equalsIgnoreCase("PASSPORT")) {
                 handlePassportDocument(userDetails, documentNumber, imageSide, docImage);
-            } else {
+            } else if (documentType.equalsIgnoreCase("BANK DETAILS")) {
+                handleBankDetailsDocument(userDetails, documentNumber, imageSide, docImage);
+            }
+            else {
                 throw new RuntimeException("Invalid document type");
             }
             this.userDetailsRepository.save(userDetails);
@@ -63,6 +67,48 @@ public class UserDetailServiceImpl implements UserDetailService {
             throw new RuntimeException("Failed to process document images: " + e.getMessage());
         }
     }
+
+    private void handleBankDetailsDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
+        BankStatementDetails bankDetails = userDetails.getBankStatementDetails();
+        if (bankDetails == null) {
+            bankDetails = new BankStatementDetails();
+            bankDetails.setBankStatementImages(new ArrayList<>());
+            userDetails.setBankStatementDetails(bankDetails);
+        }
+        bankDetails.setBankAccountNumber(documentNumber);
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+
+        BankStatementImage existingImage = null;
+        for (BankStatementImage img : bankDetails.getBankStatementImages()) {
+            if (img.getImageSide() == imageSideEnum) {
+                existingImage = img;
+                break;
+            }
+        }
+
+        BankStatementImage bankStatementImage;
+        if (existingImage != null){
+            bankStatementImage = existingImage;
+        }else{
+            bankStatementImage = new BankStatementImage();
+            bankStatementImage.setImageSide(imageSideEnum);
+            bankStatementImage.setBankStatementDetails(bankDetails);
+            bankDetails.getBankStatementImages().add(bankStatementImage);
+        }
+
+        bankStatementImage.setBankStatementFile(FileUtils.compressFile(docImage.getBytes()));
+        bankStatementImage.setBankStatementFileName(docImage.getOriginalFilename());
+        bankStatementImage.setBankStatementFileType(docImage.getContentType());
+
+    }
+
 
     @Override
     public Object getDocumentDetails(long userId, String documentType) {
@@ -77,6 +123,8 @@ public class UserDetailServiceImpl implements UserDetailService {
                 return userDetails.getDrivingLicenseDetails();
             case "PASSPORT":
                 return userDetails.getPassportDetails();
+            case "BANK DETAILS":
+                return userDetails.getBankStatementDetails();
             default:
                 return null;
         }
@@ -138,6 +186,29 @@ public class UserDetailServiceImpl implements UserDetailService {
                 result.put("fileName", dlImage.getDrivingLicenseFileName());
                 result.put("fileType", dlImage.getDrivingLicenseFileType());
                 result.put("fileData", FileUtils.decompressFile(dlImage.getDrivingLicenseFile()));
+                break;
+
+            case "PASSPORT":
+                if (userDetails.getPassportDetails() == null) {
+                    throw new RuntimeException("No Passport document found for this user");
+                }
+
+                PassportImage passportImage = userDetails.getPassportDetails().getPassportImages().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for Passport"));
+
+                result.put("fileName", passportImage.getPassportFileName());
+                result.put("fileType", passportImage.getPassportFileType());
+                result.put("fileData", FileUtils.decompressFile(passportImage.getPassportFile()));
+                break;
+
+            case "BANK DETAILS":
+                if (userDetails.getBankStatementDetails() == null) {
+                    throw new RuntimeException("No Bank Details document found for this user");
+                }
+                BankStatementImage bankStatementImage = userDetails.getBankStatementDetails().getBankStatementImages().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for Bank Details"));
+
+                result.put("fileName", bankStatementImage.getBankStatementFileName());
+                result.put("fileType", bankStatementImage.getBankStatementFileType());
+                result.put("fileData", FileUtils.decompressFile(bankStatementImage.getBankStatementFile()));
                 break;
 
             default:
