@@ -48,12 +48,16 @@ public class UserDetails {
     private PassportDetails passportDetails;
 
     @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "tradeLicenseDetailsId")
+    @JoinColumn(name = "bankStatementDetailsId")
     private BankStatementDetails bankStatementDetails;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "classXDetailsId")
     private ClassXDetails classXDetails;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "classXIIDetailsId")
+    private ClassXIIDetails classXIIDetails;
 
 
 }

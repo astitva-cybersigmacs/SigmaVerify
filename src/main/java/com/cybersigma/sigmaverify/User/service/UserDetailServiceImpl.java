@@ -58,17 +58,56 @@ public class UserDetailServiceImpl implements UserDetailService {
                 handlePassportDocument(userDetails, documentNumber, imageSide, docImage);
             } else if (documentType.equalsIgnoreCase("BANK DETAILS")) {
                 handleBankDetailsDocument(userDetails, documentNumber, imageSide, docImage);
-            }
-            else if (documentType.equalsIgnoreCase("CLASS_X_DETAILS")) {
+            } else if (documentType.equalsIgnoreCase("CLASS_X_DETAILS")) {
                 handleClassXDetailsDocument(userDetails, documentNumber, imageSide, docImage);
-            }
-            else {
+            } else if (documentType.equalsIgnoreCase("CLASS_XII_DETAILS")) {
+                handleClassXIIDetailsDocument(userDetails, documentNumber, imageSide, docImage);
+            } else {
                 throw new RuntimeException("Invalid document type");
             }
             this.userDetailsRepository.save(userDetails);
         } catch (IOException e) {
             throw new RuntimeException("Failed to process document images: " + e.getMessage());
         }
+    }
+
+    private void handleClassXIIDetailsDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
+        ClassXIIDetails classXIIDetails = userDetails.getClassXIIDetails();
+        if (classXIIDetails == null) {
+            classXIIDetails = new ClassXIIDetails();
+            classXIIDetails.setClassXIIDocs(new ArrayList<>());
+            userDetails.setClassXIIDetails(classXIIDetails);
+        }
+        classXIIDetails.setClassXIIRollNo(documentNumber);
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+        ClassXIIDocs existingImage = null;
+        for (ClassXIIDocs img : classXIIDetails.getClassXIIDocs()) {
+            if (img.getImageSide() == imageSideEnum) {
+                existingImage = img;
+                break;
+            }
+        }
+        ClassXIIDocs classXIIDoc;
+        if (existingImage != null) {
+            classXIIDoc = existingImage;
+        } else {
+            classXIIDoc = new ClassXIIDocs();
+            classXIIDoc.setImageSide(imageSideEnum);
+            classXIIDoc.setClassXIIDetails(classXIIDetails);
+            classXIIDetails.getClassXIIDocs().add(classXIIDoc);
+        }
+
+        classXIIDoc.setClassXIIImageFile(FileUtils.compressFile(docImage.getBytes()));
+        classXIIDoc.setClassXIImageFileName(docImage.getOriginalFilename());
+        classXIIDoc.setClassXIImageFileType(docImage.getContentType());
+
     }
 
     private void handleClassXDetailsDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
@@ -88,17 +127,17 @@ public class UserDetailServiceImpl implements UserDetailService {
             throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
         }
         ClassXImages existingImage = null;
-        for (ClassXImages img : classXDetails.getClassXImages()){
-            if (img.getImageSide() == imageSideEnum){
+        for (ClassXImages img : classXDetails.getClassXImages()) {
+            if (img.getImageSide() == imageSideEnum) {
                 existingImage = img;
                 break;
             }
         }
 
         ClassXImages classXImage;
-        if (existingImage != null){
+        if (existingImage != null) {
             classXImage = existingImage;
-        }else{
+        } else {
             classXImage = new ClassXImages();
             classXImage.setImageSide(imageSideEnum);
             classXImage.setClassXDetails(classXDetails);
@@ -137,9 +176,9 @@ public class UserDetailServiceImpl implements UserDetailService {
         }
 
         BankStatementImage bankStatementImage;
-        if (existingImage != null){
+        if (existingImage != null) {
             bankStatementImage = existingImage;
-        }else{
+        } else {
             bankStatementImage = new BankStatementImage();
             bankStatementImage.setImageSide(imageSideEnum);
             bankStatementImage.setBankStatementDetails(bankDetails);
@@ -157,22 +196,16 @@ public class UserDetailServiceImpl implements UserDetailService {
     public Object getDocumentDetails(long userId, String documentType) {
         UserDetails userDetails = this.userDetailsRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
 
-        switch (documentType.toUpperCase()) {
-            case "AADHAAR":
-                return userDetails.getAadhaarDetails();
-            case "PAN":
-                return userDetails.getPanDetails();
-            case "DRIVING_LICENSE":
-                return userDetails.getDrivingLicenseDetails();
-            case "PASSPORT":
-                return userDetails.getPassportDetails();
-            case "BANK DETAILS":
-                return userDetails.getBankStatementDetails();
-            case "CLASS_X_DETAILS":
-                return userDetails.getClassXDetails();
-            default:
-                return null;
-        }
+        return switch (documentType.toUpperCase()) {
+            case "AADHAAR" -> userDetails.getAadhaarDetails();
+            case "PAN" -> userDetails.getPanDetails();
+            case "DRIVING_LICENSE" -> userDetails.getDrivingLicenseDetails();
+            case "PASSPORT" -> userDetails.getPassportDetails();
+            case "BANK DETAILS" -> userDetails.getBankStatementDetails();
+            case "CLASS_X_DETAILS" -> userDetails.getClassXDetails();
+            case "CLASS_XII_DETAILS" -> userDetails.getClassXIIDetails();
+            default -> null;
+        };
     }
 
     @Override
@@ -267,6 +300,16 @@ public class UserDetailServiceImpl implements UserDetailService {
                 result.put("fileData", FileUtils.decompressFile(classXImage.getClassXImageFile()));
                 break;
 
+            case "CLASS_XII_DETAILS":
+                if (userDetails.getClassXIIDetails() == null) {
+                    throw new RuntimeException("No Class XII Details document found for this user");
+                }
+                ClassXIIDocs classXIIDoc = userDetails.getClassXIIDetails().getClassXIIDocs().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for Class XII Details"));
+
+                result.put("fileName", classXIIDoc.getClassXIImageFileName());
+                result.put("fileType", classXIIDoc.getClassXIImageFileType());
+                result.put("fileData", FileUtils.decompressFile(classXIIDoc.getClassXIIImageFile()));
+                break;
             default:
                 throw new RuntimeException("Invalid document type. Must be AADHAAR, PAN, or DRIVING_LICENSE");
         }
