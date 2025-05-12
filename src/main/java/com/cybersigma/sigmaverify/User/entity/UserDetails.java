@@ -51,4 +51,9 @@ public class UserDetails {
     @JoinColumn(name = "tradeLicenseDetailsId")
     private BankStatementDetails bankStatementDetails;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "classXDetailsId")
+    private ClassXDetails classXDetails;
+
+
 }

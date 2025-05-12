@@ -59,6 +59,9 @@ public class UserDetailServiceImpl implements UserDetailService {
             } else if (documentType.equalsIgnoreCase("BANK DETAILS")) {
                 handleBankDetailsDocument(userDetails, documentNumber, imageSide, docImage);
             }
+            else if (documentType.equalsIgnoreCase("CLASS_X_DETAILS")) {
+                handleClassXDetailsDocument(userDetails, documentNumber, imageSide, docImage);
+            }
             else {
                 throw new RuntimeException("Invalid document type");
             }
@@ -66,6 +69,46 @@ public class UserDetailServiceImpl implements UserDetailService {
         } catch (IOException e) {
             throw new RuntimeException("Failed to process document images: " + e.getMessage());
         }
+    }
+
+    private void handleClassXDetailsDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
+        ClassXDetails classXDetails = userDetails.getClassXDetails();
+        if (classXDetails == null) {
+            classXDetails = new ClassXDetails();
+            classXDetails.setClassXImages(new ArrayList<>());
+            userDetails.setClassXDetails(classXDetails);
+        }
+        classXDetails.setClassXId(documentNumber);
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+        ClassXImages existingImage = null;
+        for (ClassXImages img : classXDetails.getClassXImages()){
+            if (img.getImageSide() == imageSideEnum){
+                existingImage = img;
+                break;
+            }
+        }
+
+        ClassXImages classXImage;
+        if (existingImage != null){
+            classXImage = existingImage;
+        }else{
+            classXImage = new ClassXImages();
+            classXImage.setImageSide(imageSideEnum);
+            classXImage.setClassXDetails(classXDetails);
+            classXDetails.getClassXImages().add(classXImage);
+        }
+
+        classXImage.setClassXImageFile(FileUtils.compressFile(docImage.getBytes()));
+        classXImage.setClassXImageFileName(docImage.getOriginalFilename());
+        classXImage.setClassXImageFileType(docImage.getContentType());
+
     }
 
     private void handleBankDetailsDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
@@ -125,6 +168,8 @@ public class UserDetailServiceImpl implements UserDetailService {
                 return userDetails.getPassportDetails();
             case "BANK DETAILS":
                 return userDetails.getBankStatementDetails();
+            case "CLASS_X_DETAILS":
+                return userDetails.getClassXDetails();
             default:
                 return null;
         }
@@ -209,6 +254,17 @@ public class UserDetailServiceImpl implements UserDetailService {
                 result.put("fileName", bankStatementImage.getBankStatementFileName());
                 result.put("fileType", bankStatementImage.getBankStatementFileType());
                 result.put("fileData", FileUtils.decompressFile(bankStatementImage.getBankStatementFile()));
+                break;
+
+            case "CLASS_X_DETAILS":
+                if (userDetails.getClassXDetails() == null) {
+                    throw new RuntimeException("No Class X Details document found for this user");
+                }
+                ClassXImages classXImage = userDetails.getClassXDetails().getClassXImages().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for Class X Details"));
+
+                result.put("fileName", classXImage.getClassXImageFileName());
+                result.put("fileType", classXImage.getClassXImageFileType());
+                result.put("fileData", FileUtils.decompressFile(classXImage.getClassXImageFile()));
                 break;
 
             default:

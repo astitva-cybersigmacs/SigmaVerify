@@ -48,7 +48,7 @@ public class UserController {
     @PostMapping(value = "uploadDocument", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Object> uploadDocument(@RequestParam("userId") Long userId, @RequestParam("documentNumber") String documentNumber, @RequestParam("documentType") String documentType, @RequestParam("frontDoc") MultipartFile frontDoc, @RequestParam(value = "backDoc", required = false) MultipartFile backDoc) {
 
-        if (!documentType.equalsIgnoreCase("AADHAAR") && !documentType.equalsIgnoreCase("PAN") && !documentType.equalsIgnoreCase("DRIVING_LICENSE") && !documentType.equalsIgnoreCase("PASSPORT")  && !documentType.equalsIgnoreCase("BANK DETAILS")) {
+        if (!documentType.equalsIgnoreCase("AADHAAR") && !documentType.equalsIgnoreCase("PAN") && !documentType.equalsIgnoreCase("DRIVING_LICENSE") && !documentType.equalsIgnoreCase("PASSPORT")  && !documentType.equalsIgnoreCase("BANK DETAILS")  && !documentType.equalsIgnoreCase("CLASS_X_DETAILS")) {
             return ResponseModel.error("Invalid document type. Must be AADHAAR, PAN, or DRIVING_LICENSE");
         }
 
@@ -62,6 +62,8 @@ public class UserController {
             return ResponseModel.error("PASSPORT number cannot be empty");
         } else if (documentType.equalsIgnoreCase("BANK DETAILS") && (documentNumber == null || documentNumber.trim().isEmpty())) {
             return ResponseModel.error("Bank Account number cannot be empty");
+        } else if (documentType.equalsIgnoreCase("CLASS_X_DETAILS") && (documentNumber == null || documentNumber.trim().isEmpty())) {
+            return ResponseModel.error("Class X Roll number cannot be empty");
         }
 
         try {
@@ -84,8 +86,8 @@ public class UserController {
             return ResponseModel.error("User ID cannot be empty");
         } else if (documentRequestDto.getDocumentType() == null || documentRequestDto.getDocumentType().trim().isEmpty()) {
             return ResponseModel.error("Document type cannot be empty");
-        } else if (!documentRequestDto.getDocumentType().equalsIgnoreCase("AADHAAR") && !documentRequestDto.getDocumentType().equalsIgnoreCase("PAN") && !documentRequestDto.getDocumentType().equalsIgnoreCase("DRIVING_LICENSE") && !documentRequestDto.getDocumentType().equalsIgnoreCase("PASSPORT") && !documentRequestDto.getDocumentType().equalsIgnoreCase("BANK DETAILS")) {
-            return ResponseModel.error("Invalid document type. Must be AADHAAR, PAN, DRIVING_LICENSE, PASSPORT, BANK DETAILS");
+        } else if (!documentRequestDto.getDocumentType().equalsIgnoreCase("AADHAAR") && !documentRequestDto.getDocumentType().equalsIgnoreCase("PAN") && !documentRequestDto.getDocumentType().equalsIgnoreCase("DRIVING_LICENSE") && !documentRequestDto.getDocumentType().equalsIgnoreCase("PASSPORT") && !documentRequestDto.getDocumentType().equalsIgnoreCase("BANK DETAILS") && !documentRequestDto.getDocumentType().equalsIgnoreCase("CLASS_X_DETAILS")) {
+            return ResponseModel.error("Invalid document type. Must be AADHAAR, PAN, DRIVING_LICENSE, PASSPORT, BANK DETAILS, CLASS_X_DETAILS");
         }
         try {
             Object documentDetails = this.userDetailService.getDocumentDetails(documentRequestDto.getUserId(), documentRequestDto.getDocumentType());
@@ -104,8 +106,8 @@ public class UserController {
             return ResponseModel.error("User ID cannot be empty");
         } else if (requestDto.getDocumentType() == null || requestDto.getDocumentType().trim().isEmpty()) {
             return ResponseModel.error("Document type cannot be empty");
-        } else if (!requestDto.getDocumentType().equalsIgnoreCase("AADHAAR") && !requestDto.getDocumentType().equalsIgnoreCase("PAN") && !requestDto.getDocumentType().equalsIgnoreCase("DRIVING_LICENSE") && !requestDto.getDocumentType().equalsIgnoreCase("PASSPORT") && !requestDto.getDocumentType().equalsIgnoreCase("BANK DETAILS")) {
-            return ResponseModel.error("Invalid document type. Must be AADHAAR, PAN, DRIVING_LICENSE, PASSPORT");
+        } else if (!requestDto.getDocumentType().equalsIgnoreCase("AADHAAR") && !requestDto.getDocumentType().equalsIgnoreCase("PAN") && !requestDto.getDocumentType().equalsIgnoreCase("DRIVING_LICENSE") && !requestDto.getDocumentType().equalsIgnoreCase("PASSPORT") && !requestDto.getDocumentType().equalsIgnoreCase("BANK DETAILS") && !requestDto.getDocumentType().equalsIgnoreCase("CLASS_X_DETAILS")) {
+            return ResponseModel.error("Invalid document type. Must be AADHAAR, PAN, DRIVING_LICENSE, PASSPORT, CLASS_X_DETAILS, BANK DETAILS");
         } else if (requestDto.getImageSide() == null || requestDto.getImageSide().trim().isEmpty()) {
             return ResponseModel.error("Image side cannot be empty");
         } else if (!requestDto.getImageSide().equalsIgnoreCase("front") && !requestDto.getImageSide().equalsIgnoreCase("back")) {
