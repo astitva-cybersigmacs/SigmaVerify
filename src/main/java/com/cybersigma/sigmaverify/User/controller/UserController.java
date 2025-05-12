@@ -46,7 +46,7 @@ public class UserController {
     }
 
     @PostMapping(value = "uploadDocument", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Object> uploadDocument(@RequestParam("userId") Long userId, @RequestParam("documentNumber") String documentNumber, @RequestParam("documentType") String documentType, @RequestParam("imageSide") String imageSide, @RequestParam("docImage") MultipartFile docImage) {
+    public ResponseEntity<Object> uploadDocument(@RequestParam("userId") Long userId, @RequestParam("documentNumber") String documentNumber, @RequestParam("documentType") String documentType, @RequestParam("frontDoc") MultipartFile frontDoc, @RequestParam("backDoc") MultipartFile backDoc) {
 
         if (!documentType.equalsIgnoreCase("AADHAAR") && !documentType.equalsIgnoreCase("PAN") && !documentType.equalsIgnoreCase("DRIVING_LICENSE") && !documentType.equalsIgnoreCase("PASSPORT")) {
             return ResponseModel.error("Invalid document type. Must be AADHAAR, PAN, or DRIVING_LICENSE");
@@ -62,16 +62,22 @@ public class UserController {
             return ResponseModel.error("PASSPORT number cannot be empty");
         }
 
-        if (docImage == null || docImage.isEmpty()) {
-            return ResponseModel.error("Image is required");
+        if (frontDoc == null || frontDoc.isEmpty()) {
+            return ResponseModel.error("Front doc is required");
+        }
+        if (backDoc == null || backDoc.isEmpty()) {
+            return ResponseModel.error("Back doc is required");
         }
 
-        String docImageContentType = docImage.getContentType();
-        if ((docImageContentType == null || !docImageContentType.startsWith("image/"))) {
-            return ResponseModel.error("Files must be images");
-        }
+        String docImageContentType = frontDoc.getContentType();
         try {
-            this.userDetailService.uploadDocument(userId, documentNumber, documentType, imageSide, docImage);
+            if(documentType.equalsIgnoreCase("AADHAAR") || documentType.equalsIgnoreCase("DRIVING_LICENSE") || documentType.equalsIgnoreCase("PASSPORT")){
+                this.userDetailService.uploadDocument(userId, documentNumber, documentType, "front", frontDoc);
+                this.userDetailService.uploadDocument(userId, documentNumber, documentType, "back", backDoc);
+            } else {
+                this.userDetailService.uploadDocument(userId, documentNumber, documentType, "front", frontDoc);
+            }
+
             return ResponseModel.success("Document uploaded successfully");
         } catch (RuntimeException e) {
             return ResponseModel.error(e.getMessage());
@@ -112,7 +118,7 @@ public class UserController {
             return ResponseModel.error("Invalid image side. Must be 'front' or 'back'");
         }
         try {
-            Map<String, Object> imageData = userDetailService.getDocumentImage(requestDto.getUserId(), requestDto.getDocumentType(), requestDto.getImageSide());
+            Map<String, Object> imageData = this.userDetailService.getDocumentImage(requestDto.getUserId(), requestDto.getDocumentType(), requestDto.getImageSide());
             return ResponseEntity.ok().contentType(MediaType.parseMediaType((String) imageData.get("fileType"))).body(imageData.get("fileData"));
         } catch (RuntimeException e) {
             return ResponseModel.error(e.getMessage());
