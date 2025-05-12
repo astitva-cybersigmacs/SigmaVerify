@@ -37,9 +37,15 @@ public class UserController {
         }
         try {
             long userId = this.userDetailService.createUserDetails(userRegistrationDto);
+
             Map<String, Object> response = new HashMap<>();
             response.put("userId", userId);
-            return ResponseModel.success("User created successfully", response);
+            boolean isExistingUser = this.userDetailService.isExistingUser(userRegistrationDto.getEmailId());
+            if (isExistingUser) {
+                return ResponseModel.success("User has been updated", response);
+            } else {
+                return ResponseModel.success("User has been created successfully", response);
+            }
         } catch (RuntimeException e) {
             return ResponseModel.error(e.getMessage());
         }
@@ -48,7 +54,7 @@ public class UserController {
     @PostMapping(value = "uploadDocument", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Object> uploadDocument(@RequestParam("userId") Long userId, @RequestParam("documentNumber") String documentNumber, @RequestParam("documentType") String documentType, @RequestParam("frontDoc") MultipartFile frontDoc, @RequestParam(value = "backDoc", required = false) MultipartFile backDoc) {
 
-        if (!documentType.equalsIgnoreCase("AADHAAR") && !documentType.equalsIgnoreCase("PAN") && !documentType.equalsIgnoreCase("DRIVING_LICENSE") && !documentType.equalsIgnoreCase("PASSPORT")  && !documentType.equalsIgnoreCase("BANK DETAILS")  && !documentType.equalsIgnoreCase("CLASS_X_DETAILS") && !documentType.equalsIgnoreCase("CLASS_XII_DETAILS")) {
+        if (!documentType.equalsIgnoreCase("AADHAAR") && !documentType.equalsIgnoreCase("PAN") && !documentType.equalsIgnoreCase("DRIVING_LICENSE") && !documentType.equalsIgnoreCase("PASSPORT") && !documentType.equalsIgnoreCase("BANK DETAILS") && !documentType.equalsIgnoreCase("CLASS_X_DETAILS") && !documentType.equalsIgnoreCase("CLASS_XII_DETAILS")) {
             return ResponseModel.error("Invalid document type. Must be AADHAAR, PAN, or DRIVING_LICENSE,PASSPORT, BANK DETAILS, CLASS_X_DETAILS, CLASS_XII_DETAILS");
         }
 
@@ -64,12 +70,12 @@ public class UserController {
             return ResponseModel.error("Bank Account number cannot be empty");
         } else if (documentType.equalsIgnoreCase("CLASS_X_DETAILS") && (documentNumber == null || documentNumber.trim().isEmpty())) {
             return ResponseModel.error("Class X Roll number cannot be empty");
-        }else if (documentType.equalsIgnoreCase("CLASS_XII_DETAILS") && (documentNumber == null || documentNumber.trim().isEmpty())) {
+        } else if (documentType.equalsIgnoreCase("CLASS_XII_DETAILS") && (documentNumber == null || documentNumber.trim().isEmpty())) {
             return ResponseModel.error("Class XII Roll number cannot be empty");
         }
 
         try {
-            if(documentType.equalsIgnoreCase("AADHAAR") || documentType.equalsIgnoreCase("DRIVING_LICENSE") || documentType.equalsIgnoreCase("PASSPORT")){
+            if (documentType.equalsIgnoreCase("AADHAAR") || documentType.equalsIgnoreCase("DRIVING_LICENSE") || documentType.equalsIgnoreCase("PASSPORT")) {
                 this.userDetailService.uploadDocument(userId, documentNumber, documentType, "front", frontDoc);
                 this.userDetailService.uploadDocument(userId, documentNumber, documentType, "back", backDoc);
             } else {

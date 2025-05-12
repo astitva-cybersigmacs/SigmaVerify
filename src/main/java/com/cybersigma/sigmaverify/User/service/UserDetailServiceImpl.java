@@ -26,15 +26,13 @@ public class UserDetailServiceImpl implements UserDetailService {
     @Override
     public long createUserDetails(UserRegistrationDto userRegistrationDto) {
         UserDetails existingUserByEmail = this.userDetailsRepository.findByEmailId(userRegistrationDto.getEmailId());
-        if (existingUserByEmail != null) {
+        boolean isExistingUser = existingUserByEmail != null;
+        if (isExistingUser) {
             existingUserByEmail.setUsername(userRegistrationDto.getUsername());
             existingUserByEmail.setContactNumber(userRegistrationDto.getContactNumber());
             UserDetails updatedUser = this.userDetailsRepository.save(existingUserByEmail);
             return updatedUser.getUserId();
         } else {
-            if (this.userDetailsRepository.existsByUsername(userRegistrationDto.getUsername())) {
-                throw new RuntimeException("Username already exists");
-            }
             UserDetails userDetails = new UserDetails();
             userDetails.setUsername(userRegistrationDto.getUsername());
             userDetails.setEmailId(userRegistrationDto.getEmailId());
@@ -315,6 +313,11 @@ public class UserDetailServiceImpl implements UserDetailService {
         }
 
         return result;
+    }
+
+    @Override
+    public boolean isExistingUser(String emailId) {
+        return this.userDetailsRepository.findByEmailId(emailId) != null;
     }
 
 
