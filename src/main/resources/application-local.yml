@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: SetuApi
+  datasource:
+    url: jdbc:mysql://localhost:3306/sigmaverify
+    username: root
+    password: Astitva@12345
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+server:
+  port: 9090
+
+token: EyjkaABJxOs5evsQFfxn02YNoqiha9ZOhnFDDccV7PhxcqHe2WPhU3hRHz6G6u9pfUF0Sb6SMy0A+0RlHBsW5yhwIuUo1n8c/zMUUbaSnULZioUlBIR6Cj6hlA7O8U/h2jmbL98D11RH4p5Pl8d4pI7wijDBP6xAnfjLwF2UlgqscWLKXyG4Vc28J0KVXsp2XXZ60AuyX/kNxvLXOQ1Ls8F/vy6+FFKU7E6roQ==%
+
+email: tech@cybersigmassist.com

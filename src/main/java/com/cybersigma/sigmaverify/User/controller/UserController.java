@@ -1,0 +1,135 @@
+package com.cybersigma.sigmaverify.User.controller;
+
+import com.cybersigma.sigmaverify.User.dto.DocumentImageRequestDto;
+import com.cybersigma.sigmaverify.User.dto.DocumentRequestDto;
+import com.cybersigma.sigmaverify.User.dto.UserDetailsResponseDto;
+import com.cybersigma.sigmaverify.User.dto.UserRegistrationDto;
+import com.cybersigma.sigmaverify.User.service.UserDetailService;
+import com.cybersigma.sigmaverify.utils.ResponseModel;
+import lombok.AllArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@CrossOrigin("*")
+@RestController
+@AllArgsConstructor
+@RequestMapping("user")
+public class UserController {
+
+    private UserDetailService userDetailService;
+
+    @PostMapping("createUserDetails")
+    public ResponseEntity<Object> createUserDetails(@RequestBody UserRegistrationDto userRegistrationDto) {
+        if (userRegistrationDto.getUsername() == null || userRegistrationDto.getUsername().trim().isEmpty()) {
+            return ResponseModel.error("Username cannot be empty");
+        } else if (userRegistrationDto.getEmailId() == null || userRegistrationDto.getEmailId().trim().isEmpty()) {
+            return ResponseModel.error("Email cannot be empty");
+        } else if (!userRegistrationDto.getEmailId().matches("^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+            return ResponseModel.error("Invalid email format");
+        } else if (userRegistrationDto.getContactNumber() == null || userRegistrationDto.getContactNumber().trim().isEmpty() || userRegistrationDto.getContactNumber().length() < 10 || userRegistrationDto.getContactNumber().length() > 12) {
+            return ResponseModel.error("Invalid contact number");
+        }
+        try {
+            long userId = this.userDetailService.createUserDetails(userRegistrationDto);
+            Map<String, Object> response = new HashMap<>();
+            response.put("userId", userId);
+            return ResponseModel.success("User created successfully", response);
+        } catch (RuntimeException e) {
+            return ResponseModel.error(e.getMessage());
+        }
+    }
+
+    @PostMapping(value = "uploadDocument", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Object> uploadDocument(@RequestParam("userId") Long userId, @RequestParam("documentNumber") String documentNumber, @RequestParam("documentType") String documentType, @RequestParam("imageSide") String imageSide, @RequestParam("docImage") MultipartFile docImage) {
+
+        if (!documentType.equalsIgnoreCase("AADHAAR") && !documentType.equalsIgnoreCase("PAN") && !documentType.equalsIgnoreCase("DRIVING_LICENSE") && !documentType.equalsIgnoreCase("PASSPORT")) {
+            return ResponseModel.error("Invalid document type. Must be AADHAAR, PAN, or DRIVING_LICENSE");
+        }
+
+        if (documentType.equalsIgnoreCase("AADHAAR") && (documentNumber == null || documentNumber.trim().length() != 12 || !documentNumber.matches("\\d+"))) {
+            return ResponseModel.error("Invalid Aadhaar number. Must be 12 digits");
+        } else if (documentType.equalsIgnoreCase("PAN") && (documentNumber == null || documentNumber.trim().length() != 10 || !documentNumber.matches("[A-Z]{5}[0-9]{4}[A-Z]"))) {
+            return ResponseModel.error("Invalid PAN number format");
+        } else if (documentType.equalsIgnoreCase("DRIVING_LICENSE") && (documentNumber == null || documentNumber.trim().isEmpty())) {
+            return ResponseModel.error("Driving license number cannot be empty");
+        } else if (documentType.equalsIgnoreCase("PASSPORT") && (documentNumber == null || documentNumber.trim().isEmpty())) {
+            return ResponseModel.error("PASSPORT number cannot be empty");
+        }
+
+        if (docImage == null || docImage.isEmpty()) {
+            return ResponseModel.error("Image is required");
+        }
+
+        String docImageContentType = docImage.getContentType();
+        if ((docImageContentType == null || !docImageContentType.startsWith("image/"))) {
+            return ResponseModel.error("Files must be images");
+        }
+        try {
+            this.userDetailService.uploadDocument(userId, documentNumber, documentType, imageSide, docImage);
+            return ResponseModel.success("Document uploaded successfully");
+        } catch (RuntimeException e) {
+            return ResponseModel.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("getDocumentDetails")
+    public ResponseEntity<Object> getDocumentDetails(@RequestBody DocumentRequestDto documentRequestDto) {
+        if (documentRequestDto.getUserId() == 0) {
+            return ResponseModel.error("User ID cannot be empty");
+        } else if (documentRequestDto.getDocumentType() == null || documentRequestDto.getDocumentType().trim().isEmpty()) {
+            return ResponseModel.error("Document type cannot be empty");
+        } else if (!documentRequestDto.getDocumentType().equalsIgnoreCase("AADHAAR") && !documentRequestDto.getDocumentType().equalsIgnoreCase("PAN") && !documentRequestDto.getDocumentType().equalsIgnoreCase("DRIVING_LICENSE") && !documentRequestDto.getDocumentType().equalsIgnoreCase("PASSPORT")) {
+            return ResponseModel.error("Invalid document type. Must be AADHAAR, PAN, DRIVING_LICENSE, PASSPORT");
+        }
+        try {
+            Object documentDetails = this.userDetailService.getDocumentDetails(documentRequestDto.getUserId(), documentRequestDto.getDocumentType());
+            if (documentDetails == null) {
+                return ResponseModel.error("No " + documentRequestDto.getDocumentType() + " details found for user with ID: " + documentRequestDto.getUserId());
+            }
+            return ResponseModel.success(documentRequestDto.getDocumentType() + " details retrieved successfully", documentDetails);
+        } catch (RuntimeException e) {
+            return ResponseModel.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("getDocumentImage")
+    public ResponseEntity<Object> getDocumentImage(@RequestBody DocumentImageRequestDto requestDto) {
+        if (requestDto.getUserId() == 0) {
+            return ResponseModel.error("User ID cannot be empty");
+        } else if (requestDto.getDocumentType() == null || requestDto.getDocumentType().trim().isEmpty()) {
+            return ResponseModel.error("Document type cannot be empty");
+        } else if (!requestDto.getDocumentType().equalsIgnoreCase("AADHAAR") && !requestDto.getDocumentType().equalsIgnoreCase("PAN") && !requestDto.getDocumentType().equalsIgnoreCase("DRIVING_LICENSE") && !requestDto.getDocumentType().equalsIgnoreCase("PASSPORT")) {
+            return ResponseModel.error("Invalid document type. Must be AADHAAR, PAN, DRIVING_LICENSE, PASSPORT");
+        } else if (requestDto.getImageSide() == null || requestDto.getImageSide().trim().isEmpty()) {
+            return ResponseModel.error("Image side cannot be empty");
+        } else if (!requestDto.getImageSide().equalsIgnoreCase("front") && !requestDto.getImageSide().equalsIgnoreCase("back")) {
+            return ResponseModel.error("Invalid image side. Must be 'front' or 'back'");
+        }
+        try {
+            Map<String, Object> imageData = userDetailService.getDocumentImage(requestDto.getUserId(), requestDto.getDocumentType(), requestDto.getImageSide());
+            return ResponseEntity.ok().contentType(MediaType.parseMediaType((String) imageData.get("fileType"))).body(imageData.get("fileData"));
+        } catch (RuntimeException e) {
+            return ResponseModel.error(e.getMessage());
+        }
+    }
+
+
+    @GetMapping("getAllUsersDetails")
+    public ResponseEntity<Object> getAllUsersDetails() {
+        try {
+            List<UserDetailsResponseDto> allUsers = this.userDetailService.getAllUsersDetails();
+            if (allUsers.isEmpty()) {
+                return ResponseModel.success("No users found", allUsers);
+            }
+            return ResponseModel.success("Users retrieved successfully", allUsers);
+        } catch (RuntimeException e) {
+            return ResponseModel.error(e.getMessage());
+        }
+    }
+}

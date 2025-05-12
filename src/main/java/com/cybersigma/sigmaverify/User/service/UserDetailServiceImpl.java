@@ -1,0 +1,325 @@
+package com.cybersigma.sigmaverify.User.service;
+
+import com.cybersigma.sigmaverify.User.dto.UserDetailsResponseDto;
+import com.cybersigma.sigmaverify.User.dto.UserRegistrationDto;
+import com.cybersigma.sigmaverify.User.entity.*;
+import com.cybersigma.sigmaverify.User.repo.UserDetailsRepository;
+import com.cybersigma.sigmaverify.utils.FileUtils;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@AllArgsConstructor
+public class UserDetailServiceImpl implements UserDetailService {
+
+    private UserDetailsRepository userDetailsRepository;
+
+    @Override
+    public long createUserDetails(UserRegistrationDto userRegistrationDto) {
+        UserDetails existingUserByEmail = this.userDetailsRepository.findByEmailId(userRegistrationDto.getEmailId());
+        if (existingUserByEmail != null) {
+            existingUserByEmail.setUsername(userRegistrationDto.getUsername());
+            existingUserByEmail.setContactNumber(userRegistrationDto.getContactNumber());
+            UserDetails updatedUser = this.userDetailsRepository.save(existingUserByEmail);
+            return updatedUser.getUserId();
+        } else {
+            if (this.userDetailsRepository.existsByUsername(userRegistrationDto.getUsername())) {
+                throw new RuntimeException("Username already exists");
+            }
+            UserDetails userDetails = new UserDetails();
+            userDetails.setUsername(userRegistrationDto.getUsername());
+            userDetails.setEmailId(userRegistrationDto.getEmailId());
+            userDetails.setContactNumber(userRegistrationDto.getContactNumber());
+            UserDetails savedUserDetails = this.userDetailsRepository.save(userDetails);
+            return savedUserDetails.getUserId();
+        }
+    }
+
+    @Override
+    public void uploadDocument(long userId, String documentNumber, String documentType, String imageSide, MultipartFile docImage) {
+        UserDetails userDetails = this.userDetailsRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        try {
+            if (documentType.equalsIgnoreCase("AADHAAR")) {
+                handleAadhaarDocument(userDetails, documentNumber, imageSide, docImage);
+            } else if (documentType.equalsIgnoreCase("PAN")) {
+                handlePanDocument(userDetails, documentNumber, imageSide, docImage);
+            } else if (documentType.equalsIgnoreCase("DRIVING_LICENSE")) {
+                handleDrivingLicenseDocument(userDetails, documentNumber, imageSide, docImage);
+            } else if (documentType.equalsIgnoreCase("PASSPORT")) {
+                handlePassportDocument(userDetails, documentNumber, imageSide, docImage);
+            } else {
+                throw new RuntimeException("Invalid document type");
+            }
+            this.userDetailsRepository.save(userDetails);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to process document images: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public Object getDocumentDetails(long userId, String documentType) {
+        UserDetails userDetails = this.userDetailsRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        switch (documentType.toUpperCase()) {
+            case "AADHAAR":
+                return userDetails.getAadhaarDetails();
+            case "PAN":
+                return userDetails.getPanDetails();
+            case "DRIVING_LICENSE":
+                return userDetails.getDrivingLicenseDetails();
+            case "PASSPORT":
+                return userDetails.getPassportDetails();
+            default:
+                return null;
+        }
+    }
+
+    @Override
+    public List<UserDetailsResponseDto> getAllUsersDetails() {
+        List<UserDetails> allUsers = this.userDetailsRepository.findAll();
+        return allUsers.stream().map(this::convertToUserDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, Object> getDocumentImage(long userId, String documentType, String imageSide) {
+        UserDetails userDetails = this.userDetailsRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+
+        Map<String, Object> result = new HashMap<>();
+
+        switch (documentType.toUpperCase()) {
+            case "AADHAAR":
+                if (userDetails.getAadhaarDetails() == null) {
+                    throw new RuntimeException("No Aadhaar document found for this user");
+                }
+
+                AadhaarImage image = userDetails.getAadhaarDetails().getAadhaarImages().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for Aadhaar"));
+
+                result.put("fileName", image.getAadhaarFileName());
+                result.put("fileType", image.getAadhaarFileType());
+                result.put("fileData", FileUtils.decompressFile(image.getAadhaarFile()));
+                break;
+
+            case "PAN":
+                if (userDetails.getPanDetails() == null) {
+                    throw new RuntimeException("No PAN document found for this user");
+                }
+
+                PanImage panImage = userDetails.getPanDetails().getPanImages().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for PAN"));
+
+                result.put("fileName", panImage.getPanFileName());
+                result.put("fileType", panImage.getPanFileType());
+                result.put("fileData", FileUtils.decompressFile(panImage.getPanFile()));
+                break;
+
+            case "DRIVING_LICENSE":
+                if (userDetails.getDrivingLicenseDetails() == null) {
+                    throw new RuntimeException("No Driving License document found for this user");
+                }
+
+                DrivingLicenseImage dlImage = userDetails.getDrivingLicenseDetails().getDrivingLicenseImages().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for Driving License"));
+
+                result.put("fileName", dlImage.getDrivingLicenseFileName());
+                result.put("fileType", dlImage.getDrivingLicenseFileType());
+                result.put("fileData", FileUtils.decompressFile(dlImage.getDrivingLicenseFile()));
+                break;
+
+            default:
+                throw new RuntimeException("Invalid document type. Must be AADHAAR, PAN, or DRIVING_LICENSE");
+        }
+
+        return result;
+    }
+
+
+    private UserDetailsResponseDto convertToUserDto(UserDetails userDetails) {
+        UserDetailsResponseDto userDto = new UserDetailsResponseDto();
+        userDto.setUserId(userDetails.getUserId());
+        userDto.setUsername(userDetails.getUsername());
+        userDto.setEmailId(userDetails.getEmailId());
+        userDto.setContactNumber(userDetails.getContactNumber());
+        return userDto;
+    }
+
+    private void handlePassportDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
+        PassportDetails passportDetails = userDetails.getPassportDetails();
+        if (passportDetails == null) {
+            passportDetails = new PassportDetails();
+            passportDetails.setPassportImages(new ArrayList<>());
+            userDetails.setPassportDetails(passportDetails);
+        }
+        passportDetails.setPassportNumber(documentNumber);
+
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+
+        PassportImage existingImage = null;
+        for (PassportImage img : passportDetails.getPassportImages()) {
+            if (img.getImageSide() == imageSideEnum) {
+                existingImage = img;
+                break;
+            }
+        }
+
+        PassportImage passportImage;
+        if (existingImage != null) {
+            passportImage = existingImage;
+        } else {
+            passportImage = new PassportImage();
+            passportImage.setImageSide(imageSideEnum);
+            passportImage.setPassportDetails(passportDetails);
+            passportDetails.getPassportImages().add(passportImage);
+        }
+
+        passportImage.setPassportFile(FileUtils.compressFile(docImage.getBytes()));
+        passportImage.setPassportFileName(docImage.getOriginalFilename());
+        passportImage.setPassportFileType(docImage.getContentType());
+    }
+
+    private void handleDrivingLicenseDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
+        DrivingLicenseDetails drivingLicenseDetails = userDetails.getDrivingLicenseDetails();
+        if (drivingLicenseDetails == null) {
+            drivingLicenseDetails = new DrivingLicenseDetails();
+            drivingLicenseDetails.setDrivingLicenseImages(new ArrayList<>());
+            userDetails.setDrivingLicenseDetails(drivingLicenseDetails);
+        }
+        drivingLicenseDetails.setDrivingLicenseNumber(documentNumber);
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+
+        DrivingLicenseImage existingImage = null;
+        for (DrivingLicenseImage img : drivingLicenseDetails.getDrivingLicenseImages()) {
+            if (img.getImageSide() == imageSideEnum) {
+                existingImage = img;
+                break;
+            }
+        }
+
+        DrivingLicenseImage drivingLicenseImage;
+        if (existingImage != null) {
+            drivingLicenseImage = existingImage;
+        } else {
+            drivingLicenseImage = new DrivingLicenseImage();
+            drivingLicenseImage.setImageSide(imageSideEnum);
+            drivingLicenseImage.setDrivingLicenseDetails(drivingLicenseDetails);
+            drivingLicenseDetails.getDrivingLicenseImages().add(drivingLicenseImage);
+        }
+
+        drivingLicenseImage.setDrivingLicenseFile(FileUtils.compressFile(docImage.getBytes()));
+        drivingLicenseImage.setDrivingLicenseFileName(docImage.getOriginalFilename());
+        drivingLicenseImage.setDrivingLicenseFileType(docImage.getContentType());
+
+    }
+
+    private void handlePanDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
+
+        PanDetails panDetails = userDetails.getPanDetails();
+        if (panDetails == null) {
+            panDetails = new PanDetails();
+            panDetails.setPanImages(new ArrayList<>());
+            userDetails.setPanDetails(panDetails);
+        }
+        panDetails.setPanNumber(documentNumber);
+
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+
+        PanImage existingImage = null;
+        for (PanImage img : panDetails.getPanImages()) {
+            if (img.getImageSide() == imageSideEnum) {
+                existingImage = img;
+                break;
+            }
+        }
+
+        PanImage panImage;
+        if (existingImage != null) {
+            panImage = existingImage;
+        } else {
+            panImage = new PanImage();
+            panImage.setImageSide(imageSideEnum);
+            panImage.setPanDetails(panDetails);
+            panDetails.getPanImages().add(panImage);
+        }
+
+        panImage.setPanFile(FileUtils.compressFile(docImage.getBytes()));
+        panImage.setPanFileName(docImage.getOriginalFilename());
+        panImage.setPanFileType(docImage.getContentType());
+    }
+
+    private void handleAadhaarDocument(UserDetails userDetails, String aadhaarNumber, String imageSide, MultipartFile docImage) throws IOException {
+
+        AadhaarDetails aadhaarDetails = userDetails.getAadhaarDetails();
+        if (aadhaarDetails == null) {
+            aadhaarDetails = new AadhaarDetails();
+            aadhaarDetails.setAadhaarImages(new ArrayList<>());
+            userDetails.setAadhaarDetails(aadhaarDetails);
+        }
+        aadhaarDetails.setAadhaarNumber(aadhaarNumber);
+
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+
+        AadhaarImage existingImage = null;
+        for (AadhaarImage img : aadhaarDetails.getAadhaarImages()) {
+            if (img.getImageSide() == imageSideEnum) {
+                existingImage = img;
+                break;
+            }
+        }
+
+        AadhaarImage aadhaarImage;
+        if (existingImage != null) {
+            aadhaarImage = existingImage;
+        } else {
+            aadhaarImage = new AadhaarImage();
+            aadhaarImage.setImageSide(imageSideEnum);
+            aadhaarImage.setAadhaarDetails(aadhaarDetails);
+            aadhaarDetails.getAadhaarImages().add(aadhaarImage);
+        }
+
+        aadhaarImage.setAadhaarFile(FileUtils.compressFile(docImage.getBytes()));
+        aadhaarImage.setAadhaarFileName(docImage.getOriginalFilename());
+        aadhaarImage.setAadhaarFileType(docImage.getContentType());
+    }
+}
