@@ -60,13 +60,57 @@ public class UserDetailServiceImpl implements UserDetailService {
                 handleClassXDetailsDocument(userDetails, documentNumber, imageSide, docImage);
             } else if (documentType.equalsIgnoreCase("CLASS_XII_DETAILS")) {
                 handleClassXIIDetailsDocument(userDetails, documentNumber, imageSide, docImage);
-            } else {
+            }else if (documentType.equalsIgnoreCase("UNDER_GRADUATE_DETAILS")) {
+                handleUnderGraduateDetailsDocument(userDetails, documentNumber, imageSide, docImage);
+            }
+            else {
                 throw new RuntimeException("Invalid document type");
             }
             this.userDetailsRepository.save(userDetails);
         } catch (IOException e) {
             throw new RuntimeException("Failed to process document images: " + e.getMessage());
         }
+    }
+
+    private void handleUnderGraduateDetailsDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
+        UnderGraduationDetails underGraduationDetails = userDetails.getUnderGraduationDetails();
+        if (underGraduationDetails == null) {
+            underGraduationDetails = new UnderGraduationDetails();
+            underGraduationDetails.setUnderGraduationImages(new ArrayList<>());
+            userDetails.setUnderGraduationDetails(underGraduationDetails);
+        }
+        underGraduationDetails.setUnderGraduationRollNo(documentNumber);
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+
+        UnderGraduationImage existingImage = null;
+        for (UnderGraduationImage img : underGraduationDetails.getUnderGraduationImages()) {
+            if (img.getImageSide() == imageSideEnum) {
+                existingImage = img;
+                break;
+            }
+        }
+
+        UnderGraduationImage underGraduationImage;
+        if (existingImage != null) {
+            underGraduationImage = existingImage;
+        } else {
+            underGraduationImage = new UnderGraduationImage();
+            underGraduationImage.setImageSide(imageSideEnum);
+            underGraduationImage.setUnderGraduationDetails(underGraduationDetails);
+            underGraduationDetails.getUnderGraduationImages().add(underGraduationImage);
+        }
+
+        underGraduationImage.setUnderGraduationImageFile(FileUtils.compressFile(docImage.getBytes()));
+        underGraduationImage.setUnderGraduationImageFileName(docImage.getOriginalFilename());
+        underGraduationImage.setUnderGraduationImageFileType(docImage.getContentType());
+
     }
 
     private void handleClassXIIDetailsDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
@@ -202,6 +246,7 @@ public class UserDetailServiceImpl implements UserDetailService {
             case "BANK DETAILS" -> userDetails.getBankStatementDetails();
             case "CLASS_X_DETAILS" -> userDetails.getClassXDetails();
             case "CLASS_XII_DETAILS" -> userDetails.getClassXIIDetails();
+            case "UNDER_GRADUATE_DETAILS" -> userDetails.getUnderGraduationDetails();
             default -> null;
         };
     }
@@ -308,6 +353,18 @@ public class UserDetailServiceImpl implements UserDetailService {
                 result.put("fileType", classXIIDoc.getClassXIImageFileType());
                 result.put("fileData", FileUtils.decompressFile(classXIIDoc.getClassXIIImageFile()));
                 break;
+
+            case "UNDER_GRADUATE_DETAILS":
+                if (userDetails.getUnderGraduationDetails() == null) {
+                    throw new RuntimeException("No Under Graduate Details document found for this user");
+                }
+                UnderGraduationImage underGraduationImage = userDetails.getUnderGraduationDetails().getUnderGraduationImages().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for Under Graduate Details"));
+
+                result.put("fileName", underGraduationImage.getUnderGraduationImageFileName());
+                result.put("fileType", underGraduationImage.getUnderGraduationImageFileType());
+                result.put("fileData", FileUtils.decompressFile(underGraduationImage.getUnderGraduationImageFile()));
+                break;
+
             default:
                 throw new RuntimeException("Invalid document type. Must be AADHAAR, PAN, or DRIVING_LICENSE");
         }
