@@ -67,5 +67,9 @@ public class UserDetails {
     @JoinColumn(name = "birthCertificateDetailsId")
     private BirthCertificateDetails birthCertificateDetails;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "incomeTaxReturnDetailsId")
+    private IncomeTaxReturnDetails incomeTaxReturnDetails;
+
 
 }

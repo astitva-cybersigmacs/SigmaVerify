@@ -64,6 +64,8 @@ public class UserDetailServiceImpl implements UserDetailService {
                 handleUnderGraduateDetailsDocument(userDetails, documentNumber, imageSide, docImage);
             } else if (documentType.equalsIgnoreCase("BIRTH_CERTIFICATE")) {
                 handleBirthCertificateDocument(userDetails, documentNumber, imageSide, docImage);
+            } else if (documentType.equalsIgnoreCase("INCOME_TAX_RETURN")) {
+                handleIncomeTaxReturnDocument(userDetails, documentNumber, imageSide, docImage);
             } else {
                 throw new RuntimeException("Invalid document type");
             }
@@ -71,6 +73,43 @@ public class UserDetailServiceImpl implements UserDetailService {
         } catch (IOException e) {
             throw new RuntimeException("Failed to process document images: " + e.getMessage());
         }
+    }
+
+    private void handleIncomeTaxReturnDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
+        IncomeTaxReturnDetails incomeTaxReturnDetails = userDetails.getIncomeTaxReturnDetails();
+        if (incomeTaxReturnDetails == null) {
+            incomeTaxReturnDetails = new IncomeTaxReturnDetails();
+            incomeTaxReturnDetails.setIncomeTaxReturnImages(new ArrayList<>());
+            userDetails.setIncomeTaxReturnDetails(incomeTaxReturnDetails);
+        }
+        incomeTaxReturnDetails.setIncomeTaxReturnNumber(documentNumber);
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+        IncomeTaxReturnImage existingImage = null;
+        for (IncomeTaxReturnImage img : incomeTaxReturnDetails.getIncomeTaxReturnImages()) {
+            if (img.getImageSide() == imageSideEnum) {
+                existingImage = img;
+                break;
+            }
+        }
+        IncomeTaxReturnImage incomeTaxReturnImage;
+        if (existingImage != null) {
+            incomeTaxReturnImage = existingImage;
+        } else {
+            incomeTaxReturnImage = new IncomeTaxReturnImage();
+            incomeTaxReturnImage.setImageSide(imageSideEnum);
+            incomeTaxReturnImage.setIncomeTaxReturnDetails(incomeTaxReturnDetails);
+            incomeTaxReturnDetails.getIncomeTaxReturnImages().add(incomeTaxReturnImage);
+        }
+        incomeTaxReturnImage.setIncomeTaxReturnImageFile(FileUtils.compressFile(docImage.getBytes()));
+        incomeTaxReturnImage.setIncomeTaxReturnImageFileName(docImage.getOriginalFilename());
+        incomeTaxReturnImage.setIncomeTaxReturnImageFileType(docImage.getContentType());
     }
 
     private void handleBirthCertificateDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
@@ -288,6 +327,7 @@ public class UserDetailServiceImpl implements UserDetailService {
             case "CLASS_XII_DETAILS" -> userDetails.getClassXIIDetails();
             case "UNDER_GRADUATE_DETAILS" -> userDetails.getUnderGraduationDetails();
             case "BIRTH_CERTIFICATE" -> userDetails.getBirthCertificateDetails();
+            case "INCOME_TAX_RETURN" -> userDetails.getIncomeTaxReturnDetails();
             default -> null;
         };
     }
@@ -407,7 +447,7 @@ public class UserDetailServiceImpl implements UserDetailService {
                 break;
 
             case "BIRTH_CERTIFICATE":
-                if(userDetails.getBirthCertificateDetails() == null){
+                if (userDetails.getBirthCertificateDetails() == null) {
                     throw new RuntimeException("No Birth Certificate document found for this user");
                 }
                 BirthCertificateImage birthCertificateImage = userDetails.getBirthCertificateDetails().getBirthCertificateImages().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for Birth Certificate"));
@@ -415,6 +455,17 @@ public class UserDetailServiceImpl implements UserDetailService {
                 result.put("fileName", birthCertificateImage.getBirthCertificateImageFileName());
                 result.put("fileType", birthCertificateImage.getBirthCertificateImageFileType());
                 result.put("fileData", FileUtils.decompressFile(birthCertificateImage.getBirthCertificateImageFile()));
+                break;
+
+            case "INCOME_TAX_RETURN":
+                if (userDetails.getIncomeTaxReturnDetails() == null) {
+                    throw new RuntimeException("No Income Tax Return document found for this user");
+                }
+                IncomeTaxReturnImage incomeTaxReturnImage = userDetails.getIncomeTaxReturnDetails().getIncomeTaxReturnImages().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for Income Tax Return"));
+
+                result.put("fileName", incomeTaxReturnImage.getIncomeTaxReturnImageFileName());
+                result.put("fileType", incomeTaxReturnImage.getIncomeTaxReturnImageFileType());
+                result.put("fileData", FileUtils.decompressFile(incomeTaxReturnImage.getIncomeTaxReturnImageFile()));
                 break;
 
             default:
