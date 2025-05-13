@@ -60,16 +60,56 @@ public class UserDetailServiceImpl implements UserDetailService {
                 handleClassXDetailsDocument(userDetails, documentNumber, imageSide, docImage);
             } else if (documentType.equalsIgnoreCase("CLASS_XII_DETAILS")) {
                 handleClassXIIDetailsDocument(userDetails, documentNumber, imageSide, docImage);
-            }else if (documentType.equalsIgnoreCase("UNDER_GRADUATE_DETAILS")) {
+            } else if (documentType.equalsIgnoreCase("UNDER_GRADUATE_DETAILS")) {
                 handleUnderGraduateDetailsDocument(userDetails, documentNumber, imageSide, docImage);
-            }
-            else {
+            } else if (documentType.equalsIgnoreCase("BIRTH_CERTIFICATE")) {
+                handleBirthCertificateDocument(userDetails, documentNumber, imageSide, docImage);
+            } else {
                 throw new RuntimeException("Invalid document type");
             }
             this.userDetailsRepository.save(userDetails);
         } catch (IOException e) {
             throw new RuntimeException("Failed to process document images: " + e.getMessage());
         }
+    }
+
+    private void handleBirthCertificateDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
+        BirthCertificateDetails birthCertificateDetails = userDetails.getBirthCertificateDetails();
+        if (birthCertificateDetails == null) {
+            birthCertificateDetails = new BirthCertificateDetails();
+            birthCertificateDetails.setBirthCertificateImages(new ArrayList<>());
+            userDetails.setBirthCertificateDetails(birthCertificateDetails);
+        }
+        birthCertificateDetails.setBirthCertificateNumber(documentNumber);
+        ImageSide imageSideEnum;
+        if (imageSide.equalsIgnoreCase("front")) {
+            imageSideEnum = ImageSide.FRONT_IMAGE;
+        } else if (imageSide.equalsIgnoreCase("back")) {
+            imageSideEnum = ImageSide.BACK_IMAGE;
+        } else {
+            throw new RuntimeException("Invalid image side. Must be 'front' or 'back'");
+        }
+
+        BirthCertificateImage existingImage = null;
+        for (BirthCertificateImage img : birthCertificateDetails.getBirthCertificateImages()) {
+            if (img.getImageSide() == imageSideEnum) {
+                existingImage = img;
+                break;
+            }
+        }
+        BirthCertificateImage birthCertificateImage;
+        if (existingImage != null) {
+            birthCertificateImage = existingImage;
+        } else {
+            birthCertificateImage = new BirthCertificateImage();
+            birthCertificateImage.setImageSide(imageSideEnum);
+            birthCertificateImage.setBirthCertificateDetails(birthCertificateDetails);
+            birthCertificateDetails.getBirthCertificateImages().add(birthCertificateImage);
+        }
+
+        birthCertificateImage.setBirthCertificateImageFile(FileUtils.compressFile(docImage.getBytes()));
+        birthCertificateImage.setBirthCertificateImageFileName(docImage.getOriginalFilename());
+        birthCertificateImage.setBirthCertificateImageFileType(docImage.getContentType());
     }
 
     private void handleUnderGraduateDetailsDocument(UserDetails userDetails, String documentNumber, String imageSide, MultipartFile docImage) throws IOException {
@@ -247,6 +287,7 @@ public class UserDetailServiceImpl implements UserDetailService {
             case "CLASS_X_DETAILS" -> userDetails.getClassXDetails();
             case "CLASS_XII_DETAILS" -> userDetails.getClassXIIDetails();
             case "UNDER_GRADUATE_DETAILS" -> userDetails.getUnderGraduationDetails();
+            case "BIRTH_CERTIFICATE" -> userDetails.getBirthCertificateDetails();
             default -> null;
         };
     }
@@ -363,6 +404,17 @@ public class UserDetailServiceImpl implements UserDetailService {
                 result.put("fileName", underGraduationImage.getUnderGraduationImageFileName());
                 result.put("fileType", underGraduationImage.getUnderGraduationImageFileType());
                 result.put("fileData", FileUtils.decompressFile(underGraduationImage.getUnderGraduationImageFile()));
+                break;
+
+            case "BIRTH_CERTIFICATE":
+                if(userDetails.getBirthCertificateDetails() == null){
+                    throw new RuntimeException("No Birth Certificate document found for this user");
+                }
+                BirthCertificateImage birthCertificateImage = userDetails.getBirthCertificateDetails().getBirthCertificateImages().stream().filter(img -> img.getImageSide() == imageSideEnum).findFirst().orElseThrow(() -> new RuntimeException("No " + imageSide + " image found for Birth Certificate"));
+
+                result.put("fileName", birthCertificateImage.getBirthCertificateImageFileName());
+                result.put("fileType", birthCertificateImage.getBirthCertificateImageFileType());
+                result.put("fileData", FileUtils.decompressFile(birthCertificateImage.getBirthCertificateImageFile()));
                 break;
 
             default:

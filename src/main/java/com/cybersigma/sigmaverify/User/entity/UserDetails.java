@@ -63,5 +63,9 @@ public class UserDetails {
     @JoinColumn(name = "underGraduationDetailsId")
     private UnderGraduationDetails underGraduationDetails;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "birthCertificateDetailsId")
+    private BirthCertificateDetails birthCertificateDetails;
+
 
 }
