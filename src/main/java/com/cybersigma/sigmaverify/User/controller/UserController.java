@@ -5,6 +5,7 @@ import com.cybersigma.sigmaverify.User.service.UserDetailService;
 import com.cybersigma.sigmaverify.utils.ResponseModel;
 import com.cybersigma.sigmaverify.utils.SearchRequestDTO;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -145,6 +146,26 @@ public class UserController {
                 return ResponseModel.success("No documents found for the user", documents);
             }
             return ResponseModel.success("User documents retrieved successfully", documents);
+        } catch (RuntimeException e) {
+            return ResponseModel.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("searchUsersByDocuments")
+    public ResponseEntity<Object> searchUsersByDocuments(@RequestBody SearchRequestDTO searchRequest) {
+        try {
+            Page<UserDetailsResponseDto> usersPage = this.userDetailService.searchUsersByDocumentType(searchRequest);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("users", usersPage.getContent());
+            response.put("currentPage", usersPage.getNumber());
+            response.put("totalPages", usersPage.getTotalPages());
+            response.put("totalItems", usersPage.getTotalElements());
+            response.put("pageSize", usersPage.getSize());
+            if (usersPage.isEmpty()) {
+                return ResponseModel.success("No users found with the specified documents", response);
+            }
+            return ResponseModel.success("Users retrieved successfully", response);
         } catch (RuntimeException e) {
             return ResponseModel.error(e.getMessage());
         }

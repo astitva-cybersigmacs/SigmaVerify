@@ -6,16 +6,17 @@ import com.cybersigma.sigmaverify.User.dto.UserRegistrationDto;
 import com.cybersigma.sigmaverify.User.entity.*;
 import com.cybersigma.sigmaverify.User.repo.UserDetailsRepository;
 import com.cybersigma.sigmaverify.utils.FileUtils;
+import com.cybersigma.sigmaverify.utils.SearchRequestDTO;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.awt.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -743,5 +744,22 @@ public class UserDetailServiceImpl implements UserDetailService {
         aadhaarImage.setAadhaarFile(FileUtils.compressFile(docImage.getBytes()));
         aadhaarImage.setAadhaarFileName(docImage.getOriginalFilename());
         aadhaarImage.setAadhaarFileType(docImage.getContentType());
+    }
+
+    @Override
+    public Page<UserDetailsResponseDto> searchUsersByDocumentType(SearchRequestDTO searchRequest) {
+        Pageable pageable = PageRequest.of(searchRequest.getStart() / searchRequest.getSize(), searchRequest.getSize());
+
+        Page<UserDetails> usersPage;
+
+        if (searchRequest.getKeyword() != null && !searchRequest.getKeyword().trim().isEmpty()) {
+            String[] documentTypes = searchRequest.getKeyword().toUpperCase().split(",");
+            List<String> normalizedTypes = Arrays.stream(documentTypes).map(String::trim).collect(Collectors.toList());
+            usersPage = this.userDetailsRepository.findByDocumentTypes(normalizedTypes, pageable);
+        } else {
+            usersPage = this.userDetailsRepository.findAll(pageable);
+        }
+
+        return usersPage.map(this::convertToUserDto);
     }
 }
