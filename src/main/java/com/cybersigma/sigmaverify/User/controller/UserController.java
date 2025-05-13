@@ -35,13 +35,14 @@ public class UserController {
         } else if (userRegistrationDto.getContactNumber() == null || userRegistrationDto.getContactNumber().trim().isEmpty() || userRegistrationDto.getContactNumber().length() < 10 || userRegistrationDto.getContactNumber().length() > 12) {
             return ResponseModel.error("Invalid contact number");
         }
+
         try {
+            boolean wasExistingUser = this.userDetailService.isExistingUser(userRegistrationDto.getEmailId());
             long userId = this.userDetailService.createUserDetails(userRegistrationDto);
 
             Map<String, Object> response = new HashMap<>();
             response.put("userId", userId);
-            boolean isExistingUser = this.userDetailService.isExistingUser(userRegistrationDto.getEmailId());
-            if (isExistingUser) {
+            if (wasExistingUser) {
                 return ResponseModel.success("User has been updated", response);
             } else {
                 return ResponseModel.success("User has been created successfully", response);
