@@ -1,6 +1,7 @@
 package com.cybersigma.sigmaverify.User.service;
 
 import com.cybersigma.sigmaverify.User.dto.UserDetailsResponseDto;
+import com.cybersigma.sigmaverify.User.dto.UserDocumentInfoDto;
 import com.cybersigma.sigmaverify.User.dto.UserRegistrationDto;
 import com.cybersigma.sigmaverify.User.entity.*;
 import com.cybersigma.sigmaverify.User.repo.UserDetailsRepository;
@@ -478,6 +479,94 @@ public class UserDetailServiceImpl implements UserDetailService {
     @Override
     public boolean isExistingUser(String emailId) {
         return this.userDetailsRepository.findByEmailId(emailId) != null;
+    }
+
+    @Override
+    public List<UserDocumentInfoDto> searchUserDocuments(String keyword) {
+        UserDetails user;
+        try {
+            Long userId = Long.parseLong(keyword);
+            user = userDetailsRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found with ID: " + keyword));
+        } catch (NumberFormatException e) {
+            user = userDetailsRepository.findByEmailId(keyword);
+            if (user == null) {
+                throw new RuntimeException("User not found with email: " + keyword);
+            }
+        }
+
+        List<UserDocumentInfoDto> documents = new ArrayList<>();
+
+        if (user.getAadhaarDetails() != null) {
+            AadhaarDetails aadhaar = user.getAadhaarDetails();
+            boolean front = aadhaar.getAadhaarImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.FRONT_IMAGE);
+            boolean back = aadhaar.getAadhaarImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.BACK_IMAGE);
+            documents.add(new UserDocumentInfoDto("AADHAAR", aadhaar.getAadhaarNumber(), front, back));
+        }
+
+        if (user.getPanDetails() != null) {
+            PanDetails pan = user.getPanDetails();
+            boolean front = pan.getPanImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.FRONT_IMAGE);
+            boolean back = pan.getPanImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.BACK_IMAGE);
+            documents.add(new UserDocumentInfoDto("PAN", pan.getPanNumber(), front, back));
+        }
+
+        if (user.getDrivingLicenseDetails() != null) {
+            DrivingLicenseDetails drivingLicense = user.getDrivingLicenseDetails();
+            boolean front = drivingLicense.getDrivingLicenseImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.FRONT_IMAGE);
+            boolean back = drivingLicense.getDrivingLicenseImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.BACK_IMAGE);
+            documents.add(new UserDocumentInfoDto("DRIVING_LICENSE", drivingLicense.getDrivingLicenseNumber(), front, back));
+        }
+
+        if (user.getPassportDetails() != null) {
+            PassportDetails passport = user.getPassportDetails();
+            boolean front = passport.getPassportImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.FRONT_IMAGE);
+            boolean back = passport.getPassportImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.BACK_IMAGE);
+            documents.add(new UserDocumentInfoDto("PASSPORT", passport.getPassportNumber(), front, back));
+        }
+
+        if (user.getBankStatementDetails() != null) {
+            BankStatementDetails bankDetails = user.getBankStatementDetails();
+            boolean front = bankDetails.getBankStatementImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.FRONT_IMAGE);
+            boolean back = bankDetails.getBankStatementImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.BACK_IMAGE);
+            documents.add(new UserDocumentInfoDto("BANK DETAILS", bankDetails.getBankAccountNumber(), front, back));
+        }
+
+        if (user.getClassXDetails() != null) {
+            ClassXDetails classX = user.getClassXDetails();
+            boolean front = classX.getClassXImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.FRONT_IMAGE);
+            boolean back = classX.getClassXImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.BACK_IMAGE);
+            documents.add(new UserDocumentInfoDto("CLASS_X_DETAILS", classX.getClassXId(), front, back));
+        }
+
+        if (user.getClassXIIDetails() != null) {
+            ClassXIIDetails classXII = user.getClassXIIDetails();
+            boolean front = classXII.getClassXIIDocs().stream().anyMatch(img -> img.getImageSide() == ImageSide.FRONT_IMAGE);
+            boolean back = classXII.getClassXIIDocs().stream().anyMatch(img -> img.getImageSide() == ImageSide.BACK_IMAGE);
+            documents.add(new UserDocumentInfoDto("CLASS_XII_DETAILS", classXII.getClassXIIRollNo(), front, back));
+        }
+
+        if (user.getUnderGraduationDetails() != null) {
+            UnderGraduationDetails underGrad = user.getUnderGraduationDetails();
+            boolean front = underGrad.getUnderGraduationImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.FRONT_IMAGE);
+            boolean back = underGrad.getUnderGraduationImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.BACK_IMAGE);
+            documents.add(new UserDocumentInfoDto("UNDER_GRADUATE_DETAILS", underGrad.getUnderGraduationRollNo(), front, back));
+        }
+
+        if (user.getBirthCertificateDetails() != null) {
+            BirthCertificateDetails birthCert = user.getBirthCertificateDetails();
+            boolean front = birthCert.getBirthCertificateImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.FRONT_IMAGE);
+            boolean back = birthCert.getBirthCertificateImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.BACK_IMAGE);
+            documents.add(new UserDocumentInfoDto("BIRTH_CERTIFICATE", birthCert.getBirthCertificateNumber(), front, back));
+        }
+
+        if (user.getIncomeTaxReturnDetails() != null) {
+            IncomeTaxReturnDetails incomeTax = user.getIncomeTaxReturnDetails();
+            boolean front = incomeTax.getIncomeTaxReturnImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.FRONT_IMAGE);
+            boolean back = incomeTax.getIncomeTaxReturnImages().stream().anyMatch(img -> img.getImageSide() == ImageSide.BACK_IMAGE);
+            documents.add(new UserDocumentInfoDto("INCOME_TAX_RETURN", incomeTax.getIncomeTaxReturnNumber(), front, back));
+        }
+
+        return documents;
     }
 
 

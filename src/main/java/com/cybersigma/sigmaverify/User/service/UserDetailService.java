@@ -1,6 +1,7 @@
 package com.cybersigma.sigmaverify.User.service;
 
 import com.cybersigma.sigmaverify.User.dto.UserDetailsResponseDto;
+import com.cybersigma.sigmaverify.User.dto.UserDocumentInfoDto;
 import com.cybersigma.sigmaverify.User.dto.UserRegistrationDto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -16,4 +17,5 @@ public interface UserDetailService {
     List<UserDetailsResponseDto> getAllUsersDetails();
     Map<String, Object> getDocumentImage(long userId, String documentType, String imageSide);
     boolean isExistingUser(String emailId);
+    List<UserDocumentInfoDto> searchUserDocuments(String keyword);
 }

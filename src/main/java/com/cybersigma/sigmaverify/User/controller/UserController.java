@@ -1,11 +1,9 @@
 package com.cybersigma.sigmaverify.User.controller;
 
-import com.cybersigma.sigmaverify.User.dto.DocumentImageRequestDto;
-import com.cybersigma.sigmaverify.User.dto.DocumentRequestDto;
-import com.cybersigma.sigmaverify.User.dto.UserDetailsResponseDto;
-import com.cybersigma.sigmaverify.User.dto.UserRegistrationDto;
+import com.cybersigma.sigmaverify.User.dto.*;
 import com.cybersigma.sigmaverify.User.service.UserDetailService;
 import com.cybersigma.sigmaverify.utils.ResponseModel;
+import com.cybersigma.sigmaverify.utils.SearchRequestDTO;
 import lombok.AllArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -131,6 +129,22 @@ public class UserController {
         try {
             Map<String, Object> imageData = this.userDetailService.getDocumentImage(requestDto.getUserId(), requestDto.getDocumentType(), requestDto.getImageSide());
             return ResponseEntity.ok().contentType(MediaType.parseMediaType((String) imageData.get("fileType"))).body(imageData.get("fileData"));
+        } catch (RuntimeException e) {
+            return ResponseModel.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("searchUsers")
+    public ResponseEntity<Object> searchUsers(@RequestBody SearchRequestDTO searchRequestDTO) {
+        if (searchRequestDTO.getKeyword() == null || searchRequestDTO.getKeyword().trim().isEmpty()) {
+            return ResponseModel.error("Keyword cannot be empty");
+        }
+        try {
+            List<UserDocumentInfoDto> documents = this.userDetailService.searchUserDocuments(searchRequestDTO.getKeyword());
+            if (documents.isEmpty()) {
+                return ResponseModel.success("No documents found for the user", documents);
+            }
+            return ResponseModel.success("User documents retrieved successfully", documents);
         } catch (RuntimeException e) {
             return ResponseModel.error(e.getMessage());
         }
