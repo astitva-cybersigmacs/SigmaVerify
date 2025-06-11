@@ -135,8 +135,8 @@ public class UserController {
         }
     }
 
-    @PostMapping("searchUsers")
-    public ResponseEntity<Object> searchUsers(@RequestBody SearchRequestDTO searchRequestDTO) {
+    @PostMapping("getDocumentsByUserIdAndEmail")
+    public ResponseEntity<Object> getDocumentsByUserIdAndEmail(@RequestBody SearchRequestDTO searchRequestDTO) {
         if (searchRequestDTO.getKeyword() == null || searchRequestDTO.getKeyword().trim().isEmpty()) {
             return ResponseModel.error("Keyword cannot be empty");
         }

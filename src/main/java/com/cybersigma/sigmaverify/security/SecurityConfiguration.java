@@ -37,7 +37,7 @@ public class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        String[] urlPermitsAll = {"/generate-token"};
+        String[] urlPermitsAll = {"/generate-token","/test"};
         http.cors(withDefaults()).csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(request -> request
                         .requestMatchers(urlPermitsAll)
