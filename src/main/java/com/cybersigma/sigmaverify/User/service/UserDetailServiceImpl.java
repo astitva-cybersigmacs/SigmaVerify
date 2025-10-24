@@ -1078,4 +1078,10 @@ public class UserDetailServiceImpl implements UserDetailService {
         itrDetails.setIncomeTaxReturnNumber(itrNumber);
         itrDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
+
+    @Override
+    public boolean userExists(Long userId) {
+        return userDetailsRepository.existsById(userId);
+    }
+
 }
