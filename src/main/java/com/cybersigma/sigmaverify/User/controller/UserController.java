@@ -184,4 +184,25 @@ public class UserController {
             return ResponseModel.error(e.getMessage());
         }
     }
+
+
+    @PostMapping(value = "bulkUploadUsers", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Object> bulkUploadUsers(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseModel.error("File cannot be empty");
+        }
+
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || (!fileName.endsWith(".xlsx") && !fileName.endsWith(".xls"))) {
+            return ResponseModel.error("Invalid file format. Please upload an Excel file (.xlsx or .xls)");
+        }
+
+        try {
+            Map<String, Object> result = this.userDetailService.bulkUploadUsers(file);
+            return ResponseModel.success("Bulk upload completed", result);
+        } catch (RuntimeException e) {
+            return ResponseModel.error(e.getMessage());
+        }
+    }
+
 }

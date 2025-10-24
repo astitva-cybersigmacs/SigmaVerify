@@ -23,6 +23,11 @@ public class PassportDetails {
     @Column(unique = true)
     private String passportNumber;
 
+    @Enumerated(EnumType.STRING)
+    private DocumentStatus documentStatus = DocumentStatus.PENDING;
+
+    private String sourceOfVerification;
+
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "passportDetailsId")
     private List<PassportImage> passportImages;

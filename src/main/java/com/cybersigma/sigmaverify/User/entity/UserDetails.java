@@ -20,6 +20,8 @@ public class UserDetails {
     @Column(name = "user_id")
     private long userId;
 
+    private String name;
+
     @NotBlank(message = "Username should not be null")
     @Column(unique = true)
     private String username;

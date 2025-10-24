@@ -23,6 +23,11 @@ public class UnderGraduationDetails {
     @Column(unique = true)
     private String underGraduationRollNo;
 
+    @Enumerated(EnumType.STRING)
+    private DocumentStatus documentStatus = DocumentStatus.PENDING;
+
+    private String sourceOfVerification;
+
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "underGraduationDetailsId")
     private List<UnderGraduationImage> underGraduationImages;

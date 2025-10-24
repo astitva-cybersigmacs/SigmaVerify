@@ -19,9 +19,21 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @Service
 @AllArgsConstructor
 public class UserDetailServiceImpl implements UserDetailService {
+
+
+    private final ExecutorService executorService = Executors.newFixedThreadPool(5);
+    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     private UserDetailsRepository userDetailsRepository;
 
@@ -761,5 +773,309 @@ public class UserDetailServiceImpl implements UserDetailService {
         }
 
         return usersPage.map(this::convertToUserDto);
+    }
+
+    @Override
+    public Map<String, Object> bulkUploadUsers(MultipartFile file) {
+        List<Map<String, String>> successfulUploads = new ArrayList<>();
+        List<Map<String, String>> failedUploads = new ArrayList<>();
+
+        try {
+            Workbook workbook;
+            String fileName = file.getOriginalFilename();
+
+            if (fileName != null && fileName.endsWith(".xlsx")) {
+                workbook = new XSSFWorkbook(file.getInputStream());
+            } else {
+                workbook = new HSSFWorkbook(file.getInputStream());
+            }
+
+            Sheet sheet = workbook.getSheetAt(0);
+            int totalRows = sheet.getPhysicalNumberOfRows() - 1; // Excluding header
+
+            // Expected columns: Name, Email, Aadhaar Number, PAN Number,
+            // Driving License, Passport, Bank Account, Class X Roll No, Class XII Roll No,
+            // UG Roll No, Birth Certificate, ITR Number
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) continue;
+
+                try {
+                    String name = getCellValue(row.getCell(0));
+                    String email = getCellValue(row.getCell(1));
+                    String aadhaarNumber = getCellValue(row.getCell(2));
+                    String panNumber = getCellValue(row.getCell(3));
+                    String drivingLicense = getCellValue(row.getCell(4));
+                    String passport = getCellValue(row.getCell(5));
+                    String bankAccount = getCellValue(row.getCell(6));
+                    String classXRollNo = getCellValue(row.getCell(7));
+                    String classXIIRollNo = getCellValue(row.getCell(8));
+                    String ugRollNo = getCellValue(row.getCell(9));
+                    String birthCertificate = getCellValue(row.getCell(10));
+                    String itrNumber = getCellValue(row.getCell(11));
+
+                    // Validate required fields
+                    if (name == null || name.trim().isEmpty() ||
+                            email == null || email.trim().isEmpty()) {
+                        failedUploads.add(createFailureRecord(i, name, email, "Name and Email are required"));
+                        continue;
+                    }
+
+                    if (!email.matches("^[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}$")) {
+                        failedUploads.add(createFailureRecord(i, name, email, "Invalid email format"));
+                        continue;
+                    }
+
+                    // Create or update user
+                    UserDetails userDetails = userDetailsRepository.findByEmailId(email);
+                    if (userDetails == null) {
+                        userDetails = new UserDetails();
+                        userDetails.setEmailId(email);
+                    }
+
+                    userDetails.setName(name);
+                    userDetails.setUsername(email); // Using email as username as per requirement
+
+                    // Process Aadhaar
+                    if (aadhaarNumber != null && !aadhaarNumber.trim().isEmpty()) {
+                        processAadhaarForBulk(userDetails, aadhaarNumber.trim());
+                    }
+
+                    // Process PAN
+                    if (panNumber != null && !panNumber.trim().isEmpty()) {
+                        processPanForBulk(userDetails, panNumber.trim());
+                    }
+
+                    // Process Driving License
+                    if (drivingLicense != null && !drivingLicense.trim().isEmpty()) {
+                        processDrivingLicenseForBulk(userDetails, drivingLicense.trim());
+                    }
+
+                    // Process Passport
+                    if (passport != null && !passport.trim().isEmpty()) {
+                        processPassportForBulk(userDetails, passport.trim());
+                    }
+
+                    // Process Bank Account
+                    if (bankAccount != null && !bankAccount.trim().isEmpty()) {
+                        processBankAccountForBulk(userDetails, bankAccount.trim());
+                    }
+
+                    // Process Class X
+                    if (classXRollNo != null && !classXRollNo.trim().isEmpty()) {
+                        processClassXForBulk(userDetails, classXRollNo.trim());
+                    }
+
+                    // Process Class XII
+                    if (classXIIRollNo != null && !classXIIRollNo.trim().isEmpty()) {
+                        processClassXIIForBulk(userDetails, classXIIRollNo.trim());
+                    }
+
+                    // Process Under Graduation
+                    if (ugRollNo != null && !ugRollNo.trim().isEmpty()) {
+                        processUnderGraduationForBulk(userDetails, ugRollNo.trim());
+                    }
+
+                    // Process Birth Certificate
+                    if (birthCertificate != null && !birthCertificate.trim().isEmpty()) {
+                        processBirthCertificateForBulk(userDetails, birthCertificate.trim());
+                    }
+
+                    // Process ITR
+                    if (itrNumber != null && !itrNumber.trim().isEmpty()) {
+                        processITRForBulk(userDetails, itrNumber.trim());
+                    }
+
+                    UserDetails savedUser = userDetailsRepository.save(userDetails);
+
+                    successfulUploads.add(Map.of(
+                            "row", String.valueOf(i),
+                            "userId", String.valueOf(savedUser.getUserId()),
+                            "name", name,
+                            "email", email,
+                            "status", "Success"
+                    ));
+
+                    // Trigger async verification (you can call third-party APIs here)
+                    // triggerAsyncVerification(savedUser);
+
+                } catch (Exception e) {
+                    String name = getCellValue(row.getCell(0));
+                    String email = getCellValue(row.getCell(1));
+                    failedUploads.add(createFailureRecord(i, name, email, e.getMessage()));
+                }
+            }
+
+            workbook.close();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("totalRecords", totalRows);
+            result.put("successfulUploads", successfulUploads.size());
+            result.put("failedUploads", failedUploads.size());
+            result.put("successDetails", successfulUploads);
+            result.put("failureDetails", failedUploads);
+
+            return result;
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process Excel file: " + e.getMessage());
+        }
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) return null;
+
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                } else {
+                    // Format as integer if it's a whole number
+                    double value = cell.getNumericCellValue();
+                    if (value == (long) value) {
+                        return String.valueOf((long) value);
+                    } else {
+                        return String.valueOf(value);
+                    }
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            default:
+                return null;
+        }
+    }
+
+    private Map<String, String> createFailureRecord(int rowNumber, String name, String email, String reason) {
+        Map<String, String> record = new HashMap<>();
+        record.put("row", String.valueOf(rowNumber));
+        record.put("name", name != null ? name : "N/A");
+        record.put("email", email != null ? email : "N/A");
+        record.put("reason", reason);
+        record.put("status", "Failed");
+        return record;
+    }
+
+    // Helper methods to process each document type
+    private void processAadhaarForBulk(UserDetails userDetails, String aadhaarNumber) {
+        if (aadhaarNumber.length() != 12 || !aadhaarNumber.matches("\\d+")) {
+            throw new RuntimeException("Invalid Aadhaar number format");
+        }
+
+        AadhaarDetails aadhaarDetails = userDetails.getAadhaarDetails();
+        if (aadhaarDetails == null) {
+            aadhaarDetails = new AadhaarDetails();
+            aadhaarDetails.setAadhaarImages(new ArrayList<>());
+            userDetails.setAadhaarDetails(aadhaarDetails);
+        }
+        aadhaarDetails.setAadhaarNumber(aadhaarNumber);
+        aadhaarDetails.setDocumentStatus(DocumentStatus.PENDING);
+    }
+
+    private void processPanForBulk(UserDetails userDetails, String panNumber) {
+        if (panNumber.length() != 10 || !panNumber.matches("[A-Z]{5}[0-9]{4}[A-Z]")) {
+            throw new RuntimeException("Invalid PAN number format");
+        }
+
+        PanDetails panDetails = userDetails.getPanDetails();
+        if (panDetails == null) {
+            panDetails = new PanDetails();
+            panDetails.setPanImages(new ArrayList<>());
+            userDetails.setPanDetails(panDetails);
+        }
+        panDetails.setPanNumber(panNumber);
+        panDetails.setDocumentStatus(DocumentStatus.PENDING);
+    }
+
+    private void processDrivingLicenseForBulk(UserDetails userDetails, String dlNumber) {
+        DrivingLicenseDetails dlDetails = userDetails.getDrivingLicenseDetails();
+        if (dlDetails == null) {
+            dlDetails = new DrivingLicenseDetails();
+            dlDetails.setDrivingLicenseImages(new ArrayList<>());
+            userDetails.setDrivingLicenseDetails(dlDetails);
+        }
+        dlDetails.setDrivingLicenseNumber(dlNumber);
+        dlDetails.setDocumentStatus(DocumentStatus.PENDING);
+    }
+
+    private void processPassportForBulk(UserDetails userDetails, String passportNumber) {
+        PassportDetails passportDetails = userDetails.getPassportDetails();
+        if (passportDetails == null) {
+            passportDetails = new PassportDetails();
+            passportDetails.setPassportImages(new ArrayList<>());
+            userDetails.setPassportDetails(passportDetails);
+        }
+        passportDetails.setPassportNumber(passportNumber);
+        passportDetails.setDocumentStatus(DocumentStatus.PENDING);
+    }
+
+    private void processBankAccountForBulk(UserDetails userDetails, String accountNumber) {
+        BankStatementDetails bankDetails = userDetails.getBankStatementDetails();
+        if (bankDetails == null) {
+            bankDetails = new BankStatementDetails();
+            bankDetails.setBankStatementImages(new ArrayList<>());
+            userDetails.setBankStatementDetails(bankDetails);
+        }
+        bankDetails.setBankAccountNumber(accountNumber);
+        bankDetails.setDocumentStatus(DocumentStatus.PENDING);
+    }
+
+    private void processClassXForBulk(UserDetails userDetails, String rollNo) {
+        ClassXDetails classXDetails = userDetails.getClassXDetails();
+        if (classXDetails == null) {
+            classXDetails = new ClassXDetails();
+            classXDetails.setClassXImages(new ArrayList<>());
+            userDetails.setClassXDetails(classXDetails);
+        }
+        classXDetails.setClassXId(rollNo);
+        classXDetails.setDocumentStatus(DocumentStatus.PENDING);
+    }
+
+    private void processClassXIIForBulk(UserDetails userDetails, String rollNo) {
+        ClassXIIDetails classXIIDetails = userDetails.getClassXIIDetails();
+        if (classXIIDetails == null) {
+            classXIIDetails = new ClassXIIDetails();
+            classXIIDetails.setClassXIIDocs(new ArrayList<>());
+            userDetails.setClassXIIDetails(classXIIDetails);
+        }
+        classXIIDetails.setClassXIIRollNo(rollNo);
+        classXIIDetails.setDocumentStatus(DocumentStatus.PENDING);
+    }
+
+    private void processUnderGraduationForBulk(UserDetails userDetails, String rollNo) {
+        UnderGraduationDetails ugDetails = userDetails.getUnderGraduationDetails();
+        if (ugDetails == null) {
+            ugDetails = new UnderGraduationDetails();
+            ugDetails.setUnderGraduationImages(new ArrayList<>());
+            userDetails.setUnderGraduationDetails(ugDetails);
+        }
+        ugDetails.setUnderGraduationRollNo(rollNo);
+        ugDetails.setDocumentStatus(DocumentStatus.PENDING);
+    }
+
+    private void processBirthCertificateForBulk(UserDetails userDetails, String certificateNumber) {
+        BirthCertificateDetails birthCertDetails = userDetails.getBirthCertificateDetails();
+        if (birthCertDetails == null) {
+            birthCertDetails = new BirthCertificateDetails();
+            birthCertDetails.setBirthCertificateImages(new ArrayList<>());
+            userDetails.setBirthCertificateDetails(birthCertDetails);
+        }
+        birthCertDetails.setBirthCertificateNumber(certificateNumber);
+        birthCertDetails.setDocumentStatus(DocumentStatus.PENDING);
+    }
+
+    private void processITRForBulk(UserDetails userDetails, String itrNumber) {
+        IncomeTaxReturnDetails itrDetails = userDetails.getIncomeTaxReturnDetails();
+        if (itrDetails == null) {
+            itrDetails = new IncomeTaxReturnDetails();
+            itrDetails.setIncomeTaxReturnImages(new ArrayList<>());
+            userDetails.setIncomeTaxReturnDetails(itrDetails);
+        }
+        itrDetails.setIncomeTaxReturnNumber(itrNumber);
+        itrDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
 }

@@ -23,6 +23,11 @@ public class BirthCertificateDetails {
     @Column(unique = true)
     private String birthCertificateNumber;
 
+    @Enumerated(EnumType.STRING)
+    private DocumentStatus documentStatus = DocumentStatus.PENDING;
+
+    private String sourceOfVerification;
+
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "birthCertificateDetailsId")
     private List<BirthCertificateImage> birthCertificateImages;

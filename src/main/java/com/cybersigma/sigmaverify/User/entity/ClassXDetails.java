@@ -23,6 +23,11 @@ public class ClassXDetails {
     @Column(unique = true)
     private String classXId;
 
+    @Enumerated(EnumType.STRING)
+    private DocumentStatus documentStatus = DocumentStatus.PENDING;
+
+    private String sourceOfVerification;
+
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "panDetailsId")
     private List<ClassXImages> classXImages;

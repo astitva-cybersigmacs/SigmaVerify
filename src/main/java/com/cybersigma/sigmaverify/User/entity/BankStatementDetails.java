@@ -22,6 +22,11 @@ public class BankStatementDetails {
     @Column(unique = true)
     private String bankAccountNumber;
 
+    @Enumerated(EnumType.STRING)
+    private DocumentStatus documentStatus = DocumentStatus.PENDING;
+
+    private String sourceOfVerification;
+
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "bankStatementDetailsId")
     private List<BankStatementImage> bankStatementImages;

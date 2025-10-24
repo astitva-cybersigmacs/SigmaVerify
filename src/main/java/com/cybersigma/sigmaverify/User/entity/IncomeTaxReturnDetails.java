@@ -23,6 +23,11 @@ public class IncomeTaxReturnDetails {
     @Column(unique = true)
     private String incomeTaxReturnNumber;
 
+    @Enumerated(EnumType.STRING)
+    private DocumentStatus documentStatus = DocumentStatus.PENDING;
+
+    private String sourceOfVerification;
+
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "incomeTaxReturnDetailsId")
     private List<IncomeTaxReturnImage> incomeTaxReturnImages ;

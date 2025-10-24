@@ -23,6 +23,11 @@ public class ClassXIIDetails {
     @Column(unique = true)
     private String classXIIRollNo;
 
+    @Enumerated(EnumType.STRING)
+    private DocumentStatus documentStatus = DocumentStatus.PENDING;
+
+    private String sourceOfVerification;
+
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "classXIIDetailsId")
     private List<ClassXIIDocs> classXIIDocs;

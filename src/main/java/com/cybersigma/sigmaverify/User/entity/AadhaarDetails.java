@@ -24,6 +24,11 @@ public class AadhaarDetails {
     @Column(unique = true)
     private String aadhaarNumber;
 
+    @Enumerated(EnumType.STRING)
+    private DocumentStatus documentStatus = DocumentStatus.PENDING;
+
+    private String sourceOfVerification;
+
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "aadhaarDetailsId")
     private List<AadhaarImage> aadhaarImages;

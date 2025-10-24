@@ -22,6 +22,11 @@ public class DrivingLicenseDetails {
     @Column(unique = true)
     private String drivingLicenseNumber;
 
+    @Enumerated(EnumType.STRING)
+    private DocumentStatus documentStatus = DocumentStatus.PENDING;
+
+    private String sourceOfVerification;
+
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "drivingLicenseDetailsId")
     private List<DrivingLicenseImage> drivingLicenseImages;
