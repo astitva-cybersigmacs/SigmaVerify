@@ -2,6 +2,8 @@ package com.cybersigma.sigmaverify.User.controller;
 
 import com.cybersigma.sigmaverify.User.dto.*;
 import com.cybersigma.sigmaverify.User.service.*;
+import com.cybersigma.sigmaverify.utils.ResponseModel;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -79,5 +81,27 @@ public class EkycController {
         }
     }
 
+    @GetMapping("getProviderResponse")
+    public ResponseEntity<?> getProviderResponseByEmailId(@RequestParam(name = "emailId") String emailId) {
+        try {
+            if(emailId.isEmpty())
+                return ResponseModel.error("Email id can't be null");
 
+            String emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+            if (!emailId.matches(emailRegex)) {
+                return ResponseModel.error("Invalid email format");
+            }
+
+            ObjectNode node = UserValidationService.getParsedProviderResponsesByEmail(emailId);
+
+            if(node.isEmpty())
+                return ResponseModel.error("No provider response exists for current email");
+
+            return ResponseModel.success("Fetched provider reason by email id", node);
+
+        } catch (Exception e ) {
+            log.error("Unable to get provider response: {}", e.getMessage());
+            return ResponseModel.error("Unable to get provide response for user");
+        }
+    }
 }
