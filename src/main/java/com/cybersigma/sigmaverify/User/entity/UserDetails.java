@@ -33,6 +33,9 @@ public class UserDetails {
 
     private String contactNumber;
 
+    @Column(name = "is_validated", nullable = false)
+    private boolean isValidated = false;
+
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "aadhaarDetailsId")
     private AadhaarDetails aadhaarDetails;

@@ -1,11 +1,7 @@
 package com.cybersigma.sigmaverify.User.controller;
 
 import com.cybersigma.sigmaverify.User.dto.*;
-import com.cybersigma.sigmaverify.User.service.AadharVerificationService;
-import com.cybersigma.sigmaverify.User.service.PanVerificationService;
-import com.cybersigma.sigmaverify.User.service.UserDetailService;
-import com.cybersigma.sigmaverify.User.service.UserValidationService;
-import com.cybersigma.sigmaverify.utils.ResponseModel;
+import com.cybersigma.sigmaverify.User.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +17,7 @@ import java.util.Map;
 public class EkycController {
     private final AadharVerificationService aadharVerificationService;
     private final PanVerificationService panVerificationService;
-    private final UserValidationService userValidationService;
+    private final UserValidationService UserValidationService;
     private final UserDetailService userDetailService;
 
 
@@ -56,7 +52,7 @@ public class EkycController {
     @PostMapping("/validate/all")
     public ResponseEntity<?> validateAll(@RequestParam(name = "limit", defaultValue = "20") int pageSize) {
         try {
-            Map<String, Object> result = userValidationService.validatePendingDocuments(pageSize);
+            Map<String, Object> result = UserValidationService.validatePendingDocuments(pageSize);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("Unable to validate all users: {}", e.getMessage(), e);
@@ -72,7 +68,7 @@ public class EkycController {
                 throw new RuntimeException("User not found");
             }
 
-            Map<String, Object> result = userValidationService.validateUserById(userId);
+            Map<String, Object> result = UserValidationService.validateUserById(userId);
             if (result.containsKey("error")) {
                 return ResponseEntity.status(404).body(result);
             }

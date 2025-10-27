@@ -35,4 +35,6 @@ public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> 
             "      ('BIRTH_CERTIFICATE' IN :documentTypes AND bc IS NOT NULL) OR " +
             "      ('INCOME_TAX_RETURN' IN :documentTypes AND itr IS NOT NULL))")
     Page<UserDetails> findByDocumentTypes(@Param("documentTypes") List<String> documentTypes, Pageable pageable);
+
+    Page<UserDetails> findByIsValidatedFalse(Pageable pageable);
 }

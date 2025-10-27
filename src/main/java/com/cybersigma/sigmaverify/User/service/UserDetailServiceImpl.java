@@ -886,7 +886,7 @@ public class UserDetailServiceImpl implements UserDetailService {
                     if (itrNumber != null && !itrNumber.trim().isEmpty()) {
                         processITRForBulk(userDetails, itrNumber.trim());
                     }
-
+                    userDetails.setValidated(false); // mark as newly uploaded and not yet validated
                     UserDetails savedUser = userDetailsRepository.save(userDetails);
 
                     successfulUploads.add(Map.of(
