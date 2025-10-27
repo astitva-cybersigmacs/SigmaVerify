@@ -987,6 +987,7 @@ public class UserDetailServiceImpl implements UserDetailService {
 
         aadhaarDetails.setAadhaarNumber(aadhaarNumber);
         aadhaarDetails.setDocumentStatus(DocumentStatus.PENDING);
+        aadhaarDetails.setProviderResponse(null);
     }
 
     private void processPanForBulk(UserDetails userDetails, String panNumber) {
@@ -1008,6 +1009,7 @@ public class UserDetailServiceImpl implements UserDetailService {
 
         panDetails.setPanNumber(panNumber);
         panDetails.setDocumentStatus(DocumentStatus.PENDING);
+        panDetails.setProviderResponse(null);
     }
 
     private void processDrivingLicenseForBulk(UserDetails userDetails, String dlNumber) {
