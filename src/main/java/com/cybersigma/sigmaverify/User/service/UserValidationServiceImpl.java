@@ -208,7 +208,7 @@ public class UserValidationServiceImpl implements UserValidationService {
         // Aadhaar
         AadhaarDetails aadhaar = user.getAadhaarDetails();
         if (aadhaar != null && aadhaar.getAadhaarNumber() != null &&
-                aadhaar.getDocumentStatus() == DocumentStatus.PENDING) {
+                aadhaar.getDocumentStatus() != DocumentStatus.VERIFIED) {
 
             log.info("  -> Validating Aadhaar for userId={} ({})", userId, aadhaar.getAadhaarNumber());
             try {
@@ -255,7 +255,7 @@ public class UserValidationServiceImpl implements UserValidationService {
         // PAN
         PanDetails pan = user.getPanDetails();
         if (pan != null && pan.getPanNumber() != null &&
-                pan.getDocumentStatus() == DocumentStatus.PENDING) {
+                pan.getDocumentStatus()  != DocumentStatus.VERIFIED) {
 
             log.info("  -> Validating PAN for userId={} ({})", userId, pan.getPanNumber());
             try {
