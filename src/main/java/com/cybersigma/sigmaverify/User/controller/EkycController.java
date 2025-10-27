@@ -38,7 +38,7 @@ public class EkycController {
     @PostMapping("pan")
     public ResponseEntity<?> verifyPan(@RequestBody PanRequestDTO request) {
         try {
-            InvinciblePanResponse resp = panVerificationService.verifyPan(request.getPanNumber());
+            InvinciblePanResponse resp = panVerificationService.verifyPan(request.getPan());
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
             log.error("Unable to verify pan: {}", e.getMessage(), e);
