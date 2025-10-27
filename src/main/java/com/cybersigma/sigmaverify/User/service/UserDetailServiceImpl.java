@@ -8,6 +8,7 @@ import com.cybersigma.sigmaverify.User.repo.UserDetailsRepository;
 import com.cybersigma.sigmaverify.utils.FileUtils;
 import com.cybersigma.sigmaverify.utils.SearchRequestDTO;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,7 @@ import java.util.concurrent.Executors;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class UserDetailServiceImpl implements UserDetailService {
 
 
@@ -815,6 +817,9 @@ public class UserDetailServiceImpl implements UserDetailService {
                     String birthCertificate = getCellValue(row.getCell(10));
                     String itrNumber = getCellValue(row.getCell(11));
 
+                    // normalize email
+                    if (email != null) email = email.trim().toLowerCase();
+
                     // Validate required fields
                     if (name == null || name.trim().isEmpty() ||
                             email == null || email.trim().isEmpty()) {
@@ -832,60 +837,61 @@ public class UserDetailServiceImpl implements UserDetailService {
                     if (userDetails == null) {
                         userDetails = new UserDetails();
                         userDetails.setEmailId(email);
+                        userDetails.setUsername(email); // Using email as username as per requirement
                     }
 
                     userDetails.setName(name);
-                    userDetails.setUsername(email); // Using email as username as per requirement
 
-                    // Process Aadhaar
-                    if (aadhaarNumber != null && !aadhaarNumber.trim().isEmpty()) {
+                    // Process Aadhaar (skip if N/A-ish)
+                    if (!isNotApplicable(aadhaarNumber)) {
                         processAadhaarForBulk(userDetails, aadhaarNumber.trim());
                     }
 
-                    // Process PAN
-                    if (panNumber != null && !panNumber.trim().isEmpty()) {
-                        processPanForBulk(userDetails, panNumber.trim());
+                    // Process PAN (skip if N/A-ish). Normalize to uppercase before validation.
+                    if (!isNotApplicable(panNumber)) {
+                        processPanForBulk(userDetails, panNumber.trim().toUpperCase());
                     }
 
                     // Process Driving License
-                    if (drivingLicense != null && !drivingLicense.trim().isEmpty()) {
+                    if (!isNotApplicable(drivingLicense)) {
                         processDrivingLicenseForBulk(userDetails, drivingLicense.trim());
                     }
 
                     // Process Passport
-                    if (passport != null && !passport.trim().isEmpty()) {
+                    if (!isNotApplicable(passport)) {
                         processPassportForBulk(userDetails, passport.trim());
                     }
 
                     // Process Bank Account
-                    if (bankAccount != null && !bankAccount.trim().isEmpty()) {
+                    if (!isNotApplicable(bankAccount)) {
                         processBankAccountForBulk(userDetails, bankAccount.trim());
                     }
 
                     // Process Class X
-                    if (classXRollNo != null && !classXRollNo.trim().isEmpty()) {
+                    if (!isNotApplicable(classXRollNo)) {
                         processClassXForBulk(userDetails, classXRollNo.trim());
                     }
 
                     // Process Class XII
-                    if (classXIIRollNo != null && !classXIIRollNo.trim().isEmpty()) {
+                    if (!isNotApplicable(classXIIRollNo)) {
                         processClassXIIForBulk(userDetails, classXIIRollNo.trim());
                     }
 
                     // Process Under Graduation
-                    if (ugRollNo != null && !ugRollNo.trim().isEmpty()) {
+                    if (!isNotApplicable(ugRollNo)) {
                         processUnderGraduationForBulk(userDetails, ugRollNo.trim());
                     }
 
                     // Process Birth Certificate
-                    if (birthCertificate != null && !birthCertificate.trim().isEmpty()) {
+                    if (!isNotApplicable(birthCertificate)) {
                         processBirthCertificateForBulk(userDetails, birthCertificate.trim());
                     }
 
                     // Process ITR
-                    if (itrNumber != null && !itrNumber.trim().isEmpty()) {
+                    if (!isNotApplicable(itrNumber)) {
                         processITRForBulk(userDetails, itrNumber.trim());
                     }
+
                     userDetails.setValidated(false); // mark as newly uploaded and not yet validated
                     UserDetails savedUser = userDetailsRepository.save(userDetails);
 
@@ -922,6 +928,7 @@ public class UserDetailServiceImpl implements UserDetailService {
             throw new RuntimeException("Failed to process Excel file: " + e.getMessage());
         }
     }
+
 
     private String getCellValue(Cell cell) {
         if (cell == null) return null;
@@ -972,6 +979,12 @@ public class UserDetailServiceImpl implements UserDetailService {
             aadhaarDetails.setAadhaarImages(new ArrayList<>());
             userDetails.setAadhaarDetails(aadhaarDetails);
         }
+
+        if (aadhaarDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+             log.info("Skipping Aadhaar update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
         aadhaarDetails.setAadhaarNumber(aadhaarNumber);
         aadhaarDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
@@ -987,6 +1000,12 @@ public class UserDetailServiceImpl implements UserDetailService {
             panDetails.setPanImages(new ArrayList<>());
             userDetails.setPanDetails(panDetails);
         }
+
+        if (panDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping Pan update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
         panDetails.setPanNumber(panNumber);
         panDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
@@ -998,6 +1017,12 @@ public class UserDetailServiceImpl implements UserDetailService {
             dlDetails.setDrivingLicenseImages(new ArrayList<>());
             userDetails.setDrivingLicenseDetails(dlDetails);
         }
+
+        if (dlDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping Driving License update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
         dlDetails.setDrivingLicenseNumber(dlNumber);
         dlDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
@@ -1009,6 +1034,12 @@ public class UserDetailServiceImpl implements UserDetailService {
             passportDetails.setPassportImages(new ArrayList<>());
             userDetails.setPassportDetails(passportDetails);
         }
+
+        if (passportDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping Passport update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
         passportDetails.setPassportNumber(passportNumber);
         passportDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
@@ -1020,6 +1051,12 @@ public class UserDetailServiceImpl implements UserDetailService {
             bankDetails.setBankStatementImages(new ArrayList<>());
             userDetails.setBankStatementDetails(bankDetails);
         }
+
+        if (bankDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping Bank account update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
         bankDetails.setBankAccountNumber(accountNumber);
         bankDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
@@ -1031,6 +1068,12 @@ public class UserDetailServiceImpl implements UserDetailService {
             classXDetails.setClassXImages(new ArrayList<>());
             userDetails.setClassXDetails(classXDetails);
         }
+
+        if (classXDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping Class X update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
         classXDetails.setClassXId(rollNo);
         classXDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
@@ -1042,6 +1085,12 @@ public class UserDetailServiceImpl implements UserDetailService {
             classXIIDetails.setClassXIIDocs(new ArrayList<>());
             userDetails.setClassXIIDetails(classXIIDetails);
         }
+
+        if (classXIIDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping Class XII update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
         classXIIDetails.setClassXIIRollNo(rollNo);
         classXIIDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
@@ -1053,6 +1102,12 @@ public class UserDetailServiceImpl implements UserDetailService {
             ugDetails.setUnderGraduationImages(new ArrayList<>());
             userDetails.setUnderGraduationDetails(ugDetails);
         }
+
+        if (ugDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping Under Graduation update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
         ugDetails.setUnderGraduationRollNo(rollNo);
         ugDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
@@ -1064,6 +1119,12 @@ public class UserDetailServiceImpl implements UserDetailService {
             birthCertDetails.setBirthCertificateImages(new ArrayList<>());
             userDetails.setBirthCertificateDetails(birthCertDetails);
         }
+
+        if (birthCertDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping Birth Certificate update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
         birthCertDetails.setBirthCertificateNumber(certificateNumber);
         birthCertDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
@@ -1075,8 +1136,28 @@ public class UserDetailServiceImpl implements UserDetailService {
             itrDetails.setIncomeTaxReturnImages(new ArrayList<>());
             userDetails.setIncomeTaxReturnDetails(itrDetails);
         }
+
+        if (itrDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping ITR update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
         itrDetails.setIncomeTaxReturnNumber(itrNumber);
         itrDetails.setDocumentStatus(DocumentStatus.PENDING);
+    }
+
+    private boolean isNotApplicable(String s) {
+        if (s == null) return true;
+        String trimmed = s.trim().toLowerCase();
+        if (trimmed.isEmpty()) return true;
+        return trimmed.equals("n/a")
+                || trimmed.equals("na")
+                || trimmed.equals("not applicable")
+                || trimmed.equals("not available")
+                || trimmed.equals("none")
+                || trimmed.equals("-")
+                || trimmed.equals("na.")
+                || trimmed.equals("n.a");
     }
 
     @Override
