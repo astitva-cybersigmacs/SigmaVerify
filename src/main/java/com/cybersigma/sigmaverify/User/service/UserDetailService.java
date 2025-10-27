@@ -20,4 +20,5 @@ public interface UserDetailService {
     List<UserDocumentInfoDto> searchUserDocuments(String keyword);
     Page<UserDetailsResponseDto> searchUsersByDocumentType(SearchRequestDTO searchRequest);
     Map<String, Object> bulkUploadUsers(MultipartFile file);
+    boolean userExists(Long userId);
 }
