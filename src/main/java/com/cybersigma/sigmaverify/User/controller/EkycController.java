@@ -55,10 +55,12 @@ public class EkycController {
     public ResponseEntity<?> validateAll(@RequestParam(name = "limit", defaultValue = "20") int pageSize) {
         try {
             Map<String, Object> result = UserValidationService.validatePendingDocuments(pageSize);
-            return ResponseEntity.ok(result);
+            return ResponseModel.success("Successfully validated all users", result);
+//            return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("Unable to validate all users: {}", e.getMessage(), e);
-            return ResponseEntity.status(500).body(Map.of("error", "Unable to verify all users"));
+//            return ResponseEntity.status(500).body(Map.of("error", "Unable to verify all users"));
+            return ResponseModel.error("Unable to validate all users");
         }
     }
 
@@ -74,10 +76,13 @@ public class EkycController {
             if (result.containsKey("error")) {
                 return ResponseEntity.status(404).body(result);
             }
-            return ResponseEntity.ok(result);
+//            return ResponseEntity.ok(result);
+            return ResponseModel.success("Successfully validate user by id");
         } catch (Exception e) {
             log.error("Unable to validate user {} : {}", userId, e.getMessage(), e);
-            return ResponseEntity.status(500).body(Map.of("error", "Unable to validate user"));
+//            return ResponseEntity.status(500).body(Map.of("error", "Unable to validate user"));
+            return ResponseModel.error("Unable to validate user by id");
+
         }
     }
 
