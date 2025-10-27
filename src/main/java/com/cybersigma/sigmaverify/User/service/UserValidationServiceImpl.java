@@ -5,7 +5,9 @@ import com.cybersigma.sigmaverify.User.dto.InvinciblePanResponse;
 import com.cybersigma.sigmaverify.User.entity.*;
 import com.cybersigma.sigmaverify.User.repo.UserDetailsRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -311,6 +313,42 @@ public class UserValidationServiceImpl implements UserValidationService {
         result.put("details", details);
 
         return result;
+    }
+
+    /**
+     * Returns parsed provider responses for the given user's email.
+     */
+    public ObjectNode getParsedProviderResponsesByEmail(String emailId) {
+        UserDetails user = userDetailsRepository.findByEmailId(emailId);
+
+        if(user == null)
+            throw new RuntimeException("User does not exist!");
+
+        ObjectNode root = mapper.createObjectNode();
+
+        // helper to parse safely
+        java.util.function.BiConsumer<String, String> parseAndPut = (key, response) -> {
+            if (response == null || response.trim().isEmpty()) return;
+            try {
+                JsonNode node = mapper.readTree(response);
+                root.set(key, node);
+            } catch (Exception ex) {
+                ObjectNode fallback = mapper.createObjectNode();
+                fallback.put("raw", response);
+                fallback.put("parseError", ex.getMessage());
+                root.set(key, fallback);
+            }
+        };
+
+        // Aadhaar
+        AadhaarDetails aadhaar = user.getAadhaarDetails();
+        if (aadhaar != null) parseAndPut.accept("aadhaar", aadhaar.getProviderResponse());
+
+        // PAN
+        PanDetails pan = user.getPanDetails();
+        if (pan != null) parseAndPut.accept("pan", pan.getProviderResponse());
+
+        return root;
     }
 
     private Map<String, String> buildDetail(long userId, String email, String document, String status, String providerMsg) {
