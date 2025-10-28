@@ -8,8 +8,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("ekyc")
@@ -108,5 +111,69 @@ public class EkycController {
             log.error("Unable to get provider response: {}", e.getMessage());
             return ResponseModel.error("Unable to get provide response for user");
         }
+    }
+    @PostMapping("/validate/all/stream")
+    public SseEmitter validateAllStream(@RequestParam(name = "limit", defaultValue = "20") int pageSize) {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE); // No timeout
+
+        // Run validation asynchronously
+        CompletableFuture.runAsync(() -> {
+            try {
+                UserValidationService.validatePendingDocumentsWithStreaming(pageSize, emitter);
+                emitter.complete();
+            } catch (Exception e) {
+                log.error("Error during streaming validation: {}", e.getMessage(), e);
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("error")
+                            .data(Map.of("error", "Validation failed: " + e.getMessage())));
+                } catch (IOException ex) {
+                    log.error("Failed to send error event", ex);
+                }
+                emitter.completeWithError(e);
+            }
+        });
+
+        emitter.onCompletion(() -> log.info("SSE completed"));
+        emitter.onTimeout(() -> log.warn("SSE timeout"));
+        emitter.onError(e -> log.error("SSE error: {}", e.getMessage()));
+
+        return emitter;
+    }
+
+    @PostMapping("/validate/{userId}/stream")
+    public SseEmitter validateUserByIdStream(@PathVariable("userId") Long userId) {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                boolean exists = userDetailService.userExists(userId);
+                if (!exists) {
+                    emitter.send(SseEmitter.event()
+                            .name("error")
+                            .data(Map.of("error", "User not found")));
+                    emitter.complete();
+                    return;
+                }
+
+                UserValidationService.validateUserByIdWithStreaming(userId, emitter);
+                emitter.complete();
+            } catch (Exception e) {
+                log.error("Error during user validation: {}", e.getMessage(), e);
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("error")
+                            .data(Map.of("error", "Validation failed: " + e.getMessage())));
+                } catch (IOException ex) {
+                    log.error("Failed to send error event", ex);
+                }
+                emitter.completeWithError(e);
+            }
+        });
+
+        emitter.onCompletion(() -> log.info("SSE completed for userId: {}", userId));
+        emitter.onTimeout(() -> log.warn("SSE timeout for userId: {}", userId));
+
+        return emitter;
     }
 }

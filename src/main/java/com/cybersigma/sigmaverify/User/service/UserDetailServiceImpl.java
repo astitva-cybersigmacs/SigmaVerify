@@ -23,19 +23,12 @@ import java.util.stream.Collectors;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
 
 @Service
 @AllArgsConstructor
 @Slf4j
 public class UserDetailServiceImpl implements UserDetailService {
-
-
-    private final ExecutorService executorService = Executors.newFixedThreadPool(5);
-    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     private UserDetailsRepository userDetailsRepository;
 
