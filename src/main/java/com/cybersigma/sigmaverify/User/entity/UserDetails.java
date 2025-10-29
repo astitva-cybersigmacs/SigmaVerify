@@ -73,8 +73,15 @@ public class UserDetails {
     private BirthCertificateDetails birthCertificateDetails;
 
     @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "marriageCertificateDetailsId")
+    private MarriageCertificateDetails marriageCertificateDetails;
+
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "incomeTaxReturnDetailsId")
     private IncomeTaxReturnDetails incomeTaxReturnDetails;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "policeClearanceCertificateDetailsId")
+    private PoliceClearanceCertificateDetails policeClearanceCertificateDetails;
 
 }

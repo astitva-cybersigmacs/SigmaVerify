@@ -795,9 +795,11 @@ public class UserDetailServiceImpl implements UserDetailService {
             Sheet sheet = workbook.getSheetAt(0);
             int totalRows = sheet.getPhysicalNumberOfRows() - 1; // Excluding header
 
-            // Expected columns: Name, Email, Aadhaar Number, PAN Number,
+            // Expected columns:
+            // Name, Email, Aadhaar Number, PAN Number,
             // Driving License, Passport, Bank Account, Class X Roll No, Class XII Roll No,
-            // UG Roll No, Birth Certificate, ITR Number
+            // UG Roll No, Birth Certificate, ITR Number,
+            // Marriage Certificate Number, Police Clearance Certificate Number
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -816,6 +818,8 @@ public class UserDetailServiceImpl implements UserDetailService {
                     String ugRollNo = getCellValue(row.getCell(9));
                     String birthCertificate = getCellValue(row.getCell(10));
                     String itrNumber = getCellValue(row.getCell(11));
+                    String marriageCertificateNumber = getCellValue(row.getCell(12)); // NEW
+                    String policeClearanceCertificateNumber = getCellValue(row.getCell(13)); // NEW
 
                     // normalize email
                     if (email != null) email = email.trim().toLowerCase();
@@ -892,6 +896,16 @@ public class UserDetailServiceImpl implements UserDetailService {
                         processITRForBulk(userDetails, itrNumber.trim());
                     }
 
+                    // Process Marriage Certificate (NEW)
+                    if (!isNotApplicable(marriageCertificateNumber)) {
+                        processMarriageCertificateForBulk(userDetails, marriageCertificateNumber.trim());
+                    }
+
+                    // Process Police Clearance Certificate (NEW)
+                    if (!isNotApplicable(policeClearanceCertificateNumber)) {
+                        processPoliceClearanceForBulk(userDetails, policeClearanceCertificateNumber.trim());
+                    }
+
                     userDetails.setValidated(false); // mark as newly uploaded and not yet validated
                     UserDetails savedUser = userDetailsRepository.save(userDetails);
 
@@ -928,6 +942,7 @@ public class UserDetailServiceImpl implements UserDetailService {
             throw new RuntimeException("Failed to process Excel file: " + e.getMessage());
         }
     }
+
 
 
     private String getCellValue(Cell cell) {
@@ -1147,6 +1162,55 @@ public class UserDetailServiceImpl implements UserDetailService {
         itrDetails.setIncomeTaxReturnNumber(itrNumber);
         itrDetails.setDocumentStatus(DocumentStatus.PENDING);
     }
+
+    // Process Marriage Certificate for bulk upload
+    private void processMarriageCertificateForBulk(UserDetails userDetails, String marriageCertificateNumber) {
+        // basic validation — modify if you have more specific format rules
+        if (marriageCertificateNumber.length() < 3) {
+            throw new RuntimeException("Invalid Marriage Certificate number format");
+        }
+
+        MarriageCertificateDetails marriageDetails = userDetails.getMarriageCertificateDetails();
+        if (marriageDetails == null) {
+            marriageDetails = new MarriageCertificateDetails();
+            marriageDetails.setMarriageCertificateImages(new ArrayList<>());
+            userDetails.setMarriageCertificateDetails(marriageDetails);
+        }
+
+        if (marriageDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping Marriage Certificate update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
+        marriageDetails.setMarriageCertificateNumber(marriageCertificateNumber);
+        marriageDetails.setDocumentStatus(DocumentStatus.PENDING);
+        marriageDetails.setSourceOfVerification(null); // reset any previous source if present
+    }
+
+    // Process Police Clearance Certificate for bulk upload
+    private void processPoliceClearanceForBulk(UserDetails userDetails, String policeClearanceCertificateNumber) {
+        // basic validation — modify if you have more specific format rules
+        if (policeClearanceCertificateNumber.length() < 3) {
+            throw new RuntimeException("Invalid Police Clearance Certificate number format");
+        }
+
+        PoliceClearanceCertificateDetails policeDetails = userDetails.getPoliceClearanceCertificateDetails();
+        if (policeDetails == null) {
+            policeDetails = new PoliceClearanceCertificateDetails();
+            policeDetails.setPoliceClearanceCertificateImages(new ArrayList<>());
+            userDetails.setPoliceClearanceCertificateDetails(policeDetails);
+        }
+
+        if (policeDetails.getDocumentStatus() == DocumentStatus.VERIFIED) {
+            log.info("Skipping Police Clearance update for user {} - already VERIFIED", userDetails.getEmailId());
+            return;
+        }
+
+        policeDetails.setPoliceClearanceCertificateNumber(policeClearanceCertificateNumber);
+        policeDetails.setDocumentStatus(DocumentStatus.PENDING);
+        policeDetails.setSourceOfVerification(null); // reset any previous source if present
+    }
+
 
     private boolean isNotApplicable(String s) {
         if (s == null) return true;
