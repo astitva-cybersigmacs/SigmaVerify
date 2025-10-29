@@ -21,6 +21,9 @@ public class InvincibleApiProperties {
         public static class Endpoints {
             private String aadhaar;
             private String pan;
+            private String digilockerInit;
+            private String digilockerEAadhaar;
+            private String digilockerAllDocuments;
         }
     }
 
@@ -30,6 +33,7 @@ public class InvincibleApiProperties {
         String secret = secretKey == null ? "NULL" : ("****" + (secretKey.length() > 4 ? secretKey.substring(secretKey.length() - 4) : secretKey));
         System.out.println("Invincible props loaded: clientId=" + client + ", secretKey=" + secret);
         System.out.println("Endpoints: aadhaar=" + api.getEndpoints().getAadhaar() + ", pan=" + api.getEndpoints().getPan());
+        System.out.println("Digilocker endpoints: init=" + api.getEndpoints().getDigilockerInit() + ", eAadhaar=" + api.getEndpoints().getDigilockerEAadhaar() + ", allDocs=" + api.getEndpoints().getDigilockerAllDocuments());
     }
 }
 
