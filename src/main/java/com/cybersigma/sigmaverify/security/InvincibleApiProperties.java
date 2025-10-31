@@ -23,6 +23,9 @@ public class InvincibleApiProperties {
             private String pan;
             private String bankAccount;
             private String courtCheck;
+            private String itrLogin;
+            private String itrProfile;
+            private String itrData;
             private String digilockerInit;
             private String digilockerEAadhaar;
             private String digilockerAllDocuments;
@@ -38,6 +41,9 @@ public class InvincibleApiProperties {
                 ", pan=" + api.getEndpoints().getPan() +
                 ", bankAccount=" + api.getEndpoints().getBankAccount() +
                 ", courtCheck=" + api.getEndpoints().getCourtCheck());
+        System.out.println("ITR endpoints: login=" + api.getEndpoints().getItrLogin() +
+                ", profile=" + api.getEndpoints().getItrProfile() +
+                ", data=" + api.getEndpoints().getItrData());
         System.out.println("Digilocker endpoints: init=" + api.getEndpoints().getDigilockerInit() +
                 ", eAadhaar=" + api.getEndpoints().getDigilockerEAadhaar() +
                 ", allDocs=" + api.getEndpoints().getDigilockerAllDocuments());

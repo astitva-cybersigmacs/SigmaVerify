@@ -35,6 +35,9 @@ invincible:
       pan: https://api.emptra.com/fetchPanDetails
       bank-account: https://api.invincibleocean.com/invincible/bankAccountValidation/v1
       court-check: https://api.invincibleocean.com/invincible/courtCheckByCnr
+      itr-login: https://api.invincibleocean.com/invincible/itr-create-clientid
+      itr-profile: https://api.invincibleocean.com/invincible/itr-download-profile
+      itr-data: https://api.invincibleocean.com/invincible/itr-download-itr-data
       digilocker-init: https://api.emptra.com/initializeDigilockerV1
       digilocker-eAadhaar: https://api.emptra.com/eAadhaar
       digilocker-allDocuments: https://api.emptra.com/allIssuedFiles
