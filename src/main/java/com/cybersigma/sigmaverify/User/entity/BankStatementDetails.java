@@ -22,10 +22,20 @@ public class BankStatementDetails {
     @Column(unique = true)
     private String bankAccountNumber;
 
+    private String ifscCode;
+
+    private String phoneNumber;
+
+    private String accountHolderName;
+
     @Enumerated(EnumType.STRING)
     private DocumentStatus documentStatus = DocumentStatus.PENDING;
 
     private String sourceOfVerification;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String providerResponse;
 
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "bankStatementDetailsId")

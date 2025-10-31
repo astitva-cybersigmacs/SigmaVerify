@@ -37,4 +37,6 @@ public interface UserDetailsRepository extends JpaRepository<UserDetails, Long> 
     Page<UserDetails> findByDocumentTypes(@Param("documentTypes") List<String> documentTypes, Pageable pageable);
 
     Page<UserDetails> findByIsValidatedFalse(Pageable pageable);
+
+    List<UserDetails> findByEmailIdIn(List<String> emailIds);
 }

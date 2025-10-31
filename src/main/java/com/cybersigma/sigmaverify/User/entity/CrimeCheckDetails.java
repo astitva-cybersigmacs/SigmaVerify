@@ -13,30 +13,22 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "income_tax_return_details")
-public class IncomeTaxReturnDetails {
+@Table(name = "crime_check_details")
+public class CrimeCheckDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long incomeTaxReturnDetailsId;
+    private long crimeCheckDetailsId;
 
     @Column(unique = true)
-    private String incomeTaxReturnNumber;
-
-    private String itrUsername;
-
-    private String itrPassword;
+    private String crimeCheckId;
 
     @Enumerated(EnumType.STRING)
     private DocumentStatus documentStatus = DocumentStatus.PENDING;
 
     private String sourceOfVerification;
 
-    @Lob
-    @Column(columnDefinition = "LONGTEXT")
-    private String providerResponse;
-
     @OneToMany(cascade = CascadeType.ALL)
-    @JoinColumn(name = "incomeTaxReturnDetailsId")
-    private List<IncomeTaxReturnImage> incomeTaxReturnImages;
+    @JoinColumn(name = "crimeCheckDetails")
+    private List<CrimeCheckImage> crimeCheckImages;
 }

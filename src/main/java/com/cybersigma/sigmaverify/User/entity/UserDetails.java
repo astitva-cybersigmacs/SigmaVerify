@@ -84,4 +84,8 @@ public class UserDetails {
     @JoinColumn(name = "policeClearanceCertificateDetailsId")
     private PoliceClearanceCertificateDetails policeClearanceCertificateDetails;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "crimeCheckDetailsId")
+    private CrimeCheckDetails crimeCheckDetails;
+
 }
