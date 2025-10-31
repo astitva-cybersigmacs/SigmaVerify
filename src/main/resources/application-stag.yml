@@ -25,7 +25,6 @@ ongrid:
       digilocker-init: https://api.gridlines.io/digilocker/init
       digilocker-issued-files: https://api.gridlines.io/digilocker/issued-files
       digilocker-issued-file: https://api.gridlines.io/digilocker/issued-file
-      bank-account: https://api.invincibleocean.com/invincible/bankAccountValidation/v1
 
 invincible:
   client-id: b50c189fc515698e812eca9268f106a7:82f9e33759057b7a64268b87ad621c2d
@@ -34,6 +33,8 @@ invincible:
     endpoints:
       aadhaar: https://api.emptra.com/emptra/aadharVerification
       pan: https://api.emptra.com/fetchPanDetails
+      bank-account: https://api.invincibleocean.com/invincible/bankAccountValidation/v1
+      court-check: https://api.invincibleocean.com/invincible/courtCheckByCnr
       digilocker-init: https://api.emptra.com/initializeDigilockerV1
       digilocker-eAadhaar: https://api.emptra.com/eAadhaar
       digilocker-allDocuments: https://api.emptra.com/allIssuedFiles

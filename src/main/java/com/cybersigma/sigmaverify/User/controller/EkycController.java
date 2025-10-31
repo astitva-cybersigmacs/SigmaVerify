@@ -25,6 +25,7 @@ public class EkycController {
     private final UserValidationService UserValidationService;
     private final UserDetailService userDetailService;
     private final BankAccountVerificationService bankAccountVerificationService;
+    private final CourtCheckService courtCheckService;
 
 
     @PostMapping("aadhar")
@@ -84,6 +85,29 @@ public class EkycController {
             return ResponseModel.error("Internal server error: " + e.getMessage());
         }
     }
+
+    @PostMapping("court-check")
+    public ResponseEntity<?> checkCourtCase(@RequestBody CourtCheckRequestDTO request) {
+        if (request.getCnrNumber() == null || request.getCnrNumber().trim().isEmpty()) {
+            return ResponseModel.error("CNR number cannot be empty");
+        }
+
+        try {
+            log.info("Court case check request received for CNR: {}", request.getCnrNumber());
+            InvincibleCourtCheckResponse resp = courtCheckService.checkCourtCase(request.getCnrNumber());
+
+            if (resp.getCode() == 200 && resp.getResult() != null && resp.getResult().isSuccess()) {
+                return ResponseModel.success("Court case details fetched successfully", resp.getResult().getData());
+            } else {
+                String errorMsg = resp.getResult() != null ? resp.getResult().getMessage() : "Court case check failed";
+                return ResponseModel.error(errorMsg);
+            }
+        } catch (Exception e) {
+            log.error("Unable to check court case: {}", e.getMessage(), e);
+            return ResponseModel.error("Internal server error: " + e.getMessage());
+        }
+    }
+
 
 
 
