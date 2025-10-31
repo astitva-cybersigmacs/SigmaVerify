@@ -18,6 +18,14 @@ spring:
 server:
   port: 9090
 
+ongrid:
+  secret-key: Nouwg6Ac2uZKYroemll1BPwW1G9URQiT
+  api:
+    endpoints:
+      digilocker-init: https://api.gridlines.io/digilocker/init
+      digilocker-issued-files: https://api.gridlines.io/digilocker/issued-files
+      digilocker-issued-file: https://api.gridlines.io/digilocker/issued-file
+
 invincible:
   client-id: b50c189fc515698e812eca9268f106a7:82f9e33759057b7a64268b87ad621c2d
   secret-key: njaohblcbgfIMgoOCtZDbVmXyqZx5K6utS4dDr8SbxDhs07EFfu3vxxaHhxk7cPRn
