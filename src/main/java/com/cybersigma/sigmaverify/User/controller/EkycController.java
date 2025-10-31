@@ -24,6 +24,7 @@ public class EkycController {
     private final PanVerificationService panVerificationService;
     private final UserValidationService UserValidationService;
     private final UserDetailService userDetailService;
+    private final BankAccountVerificationService bankAccountVerificationService;
 
 
     @PostMapping("aadhar")
@@ -53,6 +54,38 @@ public class EkycController {
             return ResponseEntity.status(500).body(err);
         }
     }
+
+    @PostMapping("bank-account")
+    public ResponseEntity<?> verifyBankAccount(@RequestBody BankAccountRequestDTO request) {
+        // Validate request
+        if (request.getBankAccount() == null || request.getBankAccount().trim().isEmpty()) {
+            return ResponseModel.error("Bank account number cannot be empty");
+        }
+
+        if (request.getIfsc() == null || request.getIfsc().trim().isEmpty()) {
+            return ResponseModel.error("IFSC code cannot be empty");
+        }
+
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            return ResponseModel.error("Account holder name cannot be empty");
+        }
+
+        try {
+            log.info("Bank account verification request received");
+            InvincibleBankAccountResponse resp = bankAccountVerificationService.verifyBankAccount(request);
+
+            if (resp.getCode() == 200) {
+                return ResponseModel.success("Bank account verified successfully", resp.getResult());
+            } else {
+                return ResponseModel.error(resp.getMessage() != null ? resp.getMessage() : "Bank account verification failed");
+            }
+        } catch (Exception e) {
+            log.error("Unable to verify bank account: {}", e.getMessage(), e);
+            return ResponseModel.error("Internal server error: " + e.getMessage());
+        }
+    }
+
+
 
     @PostMapping("/validate/all")
     public ResponseEntity<?> validateAll(@RequestParam(name = "limit", defaultValue = "20") int pageSize) {

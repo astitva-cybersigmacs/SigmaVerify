@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "invincible")
 @Data
 public class InvincibleApiProperties {
-    private String clientId;    // binds from client-id
-    private String secretKey;   // binds from secret-key
+    private String clientId;
+    private String secretKey;
     private Api api = new Api();
 
     @Data
@@ -21,6 +21,7 @@ public class InvincibleApiProperties {
         public static class Endpoints {
             private String aadhaar;
             private String pan;
+            private String bankAccount;
             private String digilockerInit;
             private String digilockerEAadhaar;
             private String digilockerAllDocuments;
@@ -32,9 +33,11 @@ public class InvincibleApiProperties {
         String client = clientId == null ? "NULL" : ("****" + (clientId.length() > 4 ? clientId.substring(clientId.length() - 4) : clientId));
         String secret = secretKey == null ? "NULL" : ("****" + (secretKey.length() > 4 ? secretKey.substring(secretKey.length() - 4) : secretKey));
         System.out.println("Invincible props loaded: clientId=" + client + ", secretKey=" + secret);
-        System.out.println("Endpoints: aadhaar=" + api.getEndpoints().getAadhaar() + ", pan=" + api.getEndpoints().getPan());
-        System.out.println("Digilocker endpoints: init=" + api.getEndpoints().getDigilockerInit() + ", eAadhaar=" + api.getEndpoints().getDigilockerEAadhaar() + ", allDocs=" + api.getEndpoints().getDigilockerAllDocuments());
+        System.out.println("Endpoints: aadhaar=" + api.getEndpoints().getAadhaar() +
+                ", pan=" + api.getEndpoints().getPan() +
+                ", bankAccount=" + api.getEndpoints().getBankAccount());
+        System.out.println("Digilocker endpoints: init=" + api.getEndpoints().getDigilockerInit() +
+                ", eAadhaar=" + api.getEndpoints().getDigilockerEAadhaar() +
+                ", allDocs=" + api.getEndpoints().getDigilockerAllDocuments());
     }
 }
-
-
