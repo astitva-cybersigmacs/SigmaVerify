@@ -5,14 +5,20 @@ import com.cybersigma.sigmaverify.User.dto.PanRequestDTO;
 import com.cybersigma.sigmaverify.security.InvincibleApiProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.*;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpServerErrorException;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PanVerificationService {
 
     private final RestTemplate restTemplate;
@@ -32,10 +38,11 @@ public class PanVerificationService {
         HttpEntity<PanRequestDTO> entity = new HttpEntity<>(body, headers);
 
         try {
-            ResponseEntity<InvinciblePanResponse> resp = restTemplate.exchange(
-                    url, HttpMethod.POST, entity, InvinciblePanResponse.class);
-            return resp.getBody();
-        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            ResponseEntity<String> raw = restTemplate.exchange(
+                    url, HttpMethod.POST, entity, String.class);
+            log.info("Invincible API raw response: {}", raw.getBody());
+            InvinciblePanResponse resp = objectMapper.readValue(raw.getBody(), InvinciblePanResponse.class);
+            return resp;        } catch (HttpClientErrorException | HttpServerErrorException ex) {
             InvinciblePanResponse err = new InvinciblePanResponse();
             err.setCode(ex.getRawStatusCode());
             String respBody = ex.getResponseBodyAsString();
@@ -48,6 +55,7 @@ public class PanVerificationService {
             return err;
         }
     }
+
 }
 
 

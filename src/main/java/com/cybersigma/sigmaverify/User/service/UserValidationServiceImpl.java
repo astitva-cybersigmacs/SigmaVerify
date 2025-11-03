@@ -133,8 +133,8 @@ public class UserValidationServiceImpl implements UserValidationService {
 
                         if (pResp != null) {
                             providerMsg = pResp.getMessage();
-                            if (pResp.getResult() != null && pResp.getResult().getResult() != null) {
-                                Boolean isValid = pResp.getResult().getResult().isValid();
+                            if (pResp.getResult() != null && pResp.getResult().getAadharLinked() != null) {
+                                Boolean isValid = pResp.getResult().getAadharLinked();
                                 verified = Boolean.TRUE.equals(isValid);
                             }
                         }
@@ -273,8 +273,8 @@ public class UserValidationServiceImpl implements UserValidationService {
 
                 if (pResp != null) {
                     providerMsg = pResp.getMessage();
-                    if (pResp.getResult() != null && pResp.getResult().getResult() != null) {
-                        Boolean isValid = pResp.getResult().getResult().isValid();
+                    if (pResp.getResult() != null && pResp.getResult().getAadharLinked() != null) {
+                        Boolean isValid = pResp.getResult().getAadharLinked();
                         isVerified = Boolean.TRUE.equals(isValid);
                     }
                 }
@@ -508,8 +508,8 @@ public class UserValidationServiceImpl implements UserValidationService {
 
                             if (pResp != null) {
                                 providerMsg = pResp.getMessage();
-                                if (pResp.getResult() != null && pResp.getResult().getResult() != null) {
-                                    Boolean isValid = pResp.getResult().getResult().isValid();
+                                if (pResp.getResult() != null && pResp.getResult().getAadharLinked() != null) {
+                                    Boolean isValid = pResp.getResult().getAadharLinked();
                                     verified = Boolean.TRUE.equals(isValid);
                                 }
                             }

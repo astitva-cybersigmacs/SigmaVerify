@@ -244,7 +244,6 @@ public class BulkUploadServiceImpl implements BulkUploadService {
             if (existing == null) existing = new AadhaarDetails();
             existing.setAadhaarNumber(aadhaarNumber.trim());
             existing.setDocumentStatus(DocumentStatus.PENDING);
-            existing.setSourceOfVerification("bulk-upload");
             user.setAadhaarDetails(existing);
         }
     }
@@ -258,7 +257,6 @@ public class BulkUploadServiceImpl implements BulkUploadService {
             if (existing == null) existing = new PanDetails();
             existing.setPanNumber(panNumber.trim().toUpperCase());
             existing.setDocumentStatus(DocumentStatus.PENDING);
-            existing.setSourceOfVerification("bulk-upload");
             user.setPanDetails(existing);
         }
     }
@@ -283,7 +281,6 @@ public class BulkUploadServiceImpl implements BulkUploadService {
             }
 
             existing.setDocumentStatus(DocumentStatus.PENDING);
-            existing.setSourceOfVerification("bulk-upload");
             user.setBankStatementDetails(existing);
         }
     }
@@ -303,7 +300,6 @@ public class BulkUploadServiceImpl implements BulkUploadService {
             }
 
             existing.setDocumentStatus(DocumentStatus.PENDING);
-            existing.setSourceOfVerification("bulk-upload");
             user.setIncomeTaxReturnDetails(existing);
         }
     }
@@ -317,7 +313,6 @@ public class BulkUploadServiceImpl implements BulkUploadService {
             if (existing == null) existing = new CrimeCheckDetails();
             existing.setCrimeCheckId(crimeCheckId.trim());
             existing.setDocumentStatus(DocumentStatus.PENDING);
-            existing.setSourceOfVerification("bulk-upload");
             user.setCrimeCheckDetails(existing);
         }
     }

@@ -27,12 +27,12 @@ ongrid:
       digilocker-issued-file: https://api.gridlines.io/digilocker/issued-file
 
 invincible:
-  client-id: b50c189fc515698e812eca9268f106a7:82f9e33759057b7a64268b87ad621c2d
-  secret-key: njaohblcbgfIMgoOCtZDbVmXyqZx5K6utS4dDr8SbxDhs07EFfu3vxxaHhxk7cPRn
+  client-id: 0f0cd3bcaec7525d68575c9b8a437a33:6f94fde5c3ec6b943629f8f3ef1187bb
+  secret-key: IAj8ByiwOhk4RbrGVXJAuxQ0nMlJt8ohpp6dPn2sTAmrIqjrI1HABq8lQXPxICvEA
   api:
     endpoints:
       aadhaar: https://api.emptra.com/emptra/aadharVerification
-      pan: https://api.emptra.com/fetchPanDetails
+      pan: https://api.invincibleocean.com/invincible/panPlus
       bank-account: https://api.invincibleocean.com/invincible/bankAccountValidation/v1
       court-check: https://api.invincibleocean.com/invincible/courtCheckByCnr
       itr-login: https://api.invincibleocean.com/invincible/itr-create-clientid

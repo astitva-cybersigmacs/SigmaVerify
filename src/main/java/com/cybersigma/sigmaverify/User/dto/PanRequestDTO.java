@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PanRequestDTO {
-    private String pan;
+    private String panNumber;
 }
 

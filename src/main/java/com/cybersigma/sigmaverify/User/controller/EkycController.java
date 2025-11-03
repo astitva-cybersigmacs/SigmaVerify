@@ -44,17 +44,19 @@ public class EkycController {
 
     @PostMapping("pan")
     public ResponseEntity<?> verifyPan(@RequestBody PanRequestDTO request) {
+        if (request.getPanNumber() == null || request.getPanNumber().trim().isEmpty()) {
+            return ResponseModel.error("PAN number cannot be empty");
+        }
         try {
-            InvinciblePanResponse resp = panVerificationService.verifyPan(request.getPan());
-            return ResponseEntity.ok(resp);
+            log.info("PAN verification request received for: {}", request.getPanNumber());
+            InvinciblePanResponse resp = panVerificationService.verifyPan(request.getPanNumber());
+            return ResponseModel.success("PAN verified successfully", resp.getResult());
         } catch (Exception e) {
-            log.error("Unable to verify pan: {}", e.getMessage(), e);
-            InvinciblePanResponse err = new InvinciblePanResponse();
-            err.setCode(500);
-            err.setMessage("Internal server error");
-            return ResponseEntity.status(500).body(err);
+            log.error("Unable to verify PAN: {}", e.getMessage(), e);
+            return ResponseModel.error("Internal server error: " + e.getMessage());
         }
     }
+
 
     @PostMapping("bank-account")
     public ResponseEntity<?> verifyBankAccount(@RequestBody BankAccountRequestDTO request) {

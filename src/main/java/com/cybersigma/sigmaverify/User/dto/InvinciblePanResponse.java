@@ -1,57 +1,77 @@
 package com.cybersigma.sigmaverify.User.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 public class InvinciblePanResponse {
     private int code;
-    private String message; // for errors like "Please Update Your Wallet!"
-    private OuterResult result;
+    private PanResult result;
+    private String message;
 
-    // ----------------------------
-    // Outer result wrapper
-    // ----------------------------
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Data
-    public static class OuterResult {
-        private Essentials essentials;
-        private String id;
-        private String patronId;
-        private String task;
-        private InnerResult result;
-    }
+    public static class PanResult {
+        @JsonProperty("PAN")
+        private String pan;
 
-    // ----------------------------
-    // Essentials section
-    // ----------------------------
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    @Data
-    public static class Essentials {
-        private String number;
-    }
-
-    // ----------------------------
-    // Inner PAN details (actual data)
-    // ----------------------------
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    @Data
-    public static class InnerResult {
-        private String name;
-        private String number;
-        private String typeOfHolder;
-        private boolean isIndividual;
-        private boolean isValid;
+        @JsonProperty("FIRST_NAME")
         private String firstName;
+
+        @JsonProperty("MIDDLE_NAME")
         private String middleName;
+
+        @JsonProperty("LAST_NAME")
         private String lastName;
-        private String title;
-        private String panStatus;
-        private String panStatusCode;
-        private String aadhaarSeedingStatus;
-        private String aadhaarSeedingStatusCode;
-        private String lastUpdatedOn;
+
+        @JsonProperty("AADHAR_NUM")
+        private String aadharNum;
+
+        @JsonProperty("AADHAR_LINKED")
+        private Boolean aadharLinked;
+
+        @JsonProperty("DOB_VERIFIED")
+        private Boolean dobVerified;
+
+        @JsonProperty("DOB_CHECK")
+        private Boolean dobCheck;
+
+        @JsonProperty("EMAIL")
+        private String email;
+
+        @JsonProperty("DOB")
+        private String dob;
+
+        @JsonProperty("GENDER")
+        private String gender;
+
+        @JsonProperty("IDENTITY_TYPE")
+        private String identityType;
+
+        @JsonProperty("MOBILE_NO")
+        private String mobileNo;
+
+        @JsonProperty("ADDRESS_1")
+        private String address1;
+
+        @JsonProperty("ADDRESS_2")
+        private String address2;
+
+        @JsonProperty("ADDRESS_3")
+        private String address3;
+
+        @JsonProperty("PINCODE")
+        private String pincode;
+
+        @JsonProperty("CITY")
+        private String city;
+
+        @JsonProperty("STATE")
+        private String state;
+
+        @JsonProperty("COUNTRY")
+        private String country;
     }
 }
-
