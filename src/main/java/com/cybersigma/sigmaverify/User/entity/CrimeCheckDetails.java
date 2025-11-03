@@ -26,6 +26,11 @@ public class CrimeCheckDetails {
     @Enumerated(EnumType.STRING)
     private DocumentStatus documentStatus = DocumentStatus.PENDING;
 
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String providerResponse;
+
+
     private String sourceOfVerification;
 
     @OneToMany(cascade = CascadeType.ALL)
